@@ -9,7 +9,7 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>Iniciar Sesión - Gestión de Proveedores</title>
+        <title>Iniciar Sesión - Proveedores</title>
         <link rel="stylesheet" href="css/estilos.css">
     </head>
     <body>
