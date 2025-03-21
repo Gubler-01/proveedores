@@ -6,7 +6,6 @@ public class Product {
     private String description;
     private double price;
     private int stock;
-    private boolean hasPendingOrders;
     private String imageId; // Campo para almacenar el ID de la imagen en GridFS
 
     // Constructor vacío
@@ -52,14 +51,6 @@ public class Product {
 
     public void setStock(int stock) {
         this.stock = stock;
-    }
-
-    public boolean isHasPendingOrders() {
-        return hasPendingOrders;
-    }
-
-    public void setHasPendingOrders(boolean hasPendingOrders) {
-        this.hasPendingOrders = hasPendingOrders;
     }
 
     public String getImageId() {

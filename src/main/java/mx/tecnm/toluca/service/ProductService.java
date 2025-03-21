@@ -23,8 +23,9 @@ public class ProductService {
 
     public void updateProduct(Product product, InputStream imageStream, String imageName) {
         if (imageStream != null) {
-            if (product.getImageId() != null) {
-                productRepository.deleteImage(product.getImageId());
+            Product existingProduct = productRepository.findById(product.getId());
+            if (existingProduct != null && existingProduct.getImageId() != null) {
+                productRepository.deleteImage(existingProduct.getImageId());
             }
             String imageId = productRepository.saveImage(imageStream, imageName);
             product.setImageId(imageId);

@@ -19,47 +19,58 @@ import java.util.List;
 
 public class ProductRepository {
     private final MongoCollection<Document> productCollection;
-    private final MongoCollection<Document> orderCollection; // Agregar colección de órdenes
+    private final MongoCollection<Document> orderCollection;
     private final GridFSBucket gridFSBucket;
 
     public ProductRepository() {
         MongoClient mongoClient = MongoClients.create("mongodb://localhost:27017");
         MongoDatabase database = mongoClient.getDatabase("supplier_db");
         this.productCollection = database.getCollection("products");
-        this.orderCollection = database.getCollection("orders"); // Inicializar colección de órdenes
+        this.orderCollection = database.getCollection("orders");
         this.gridFSBucket = GridFSBuckets.create(database);
     }
 
     public void save(Product product) {
-        // Generar un ID personalizado: PROD-BLANCO-X
         long productCount = productCollection.countDocuments();
         String customId = "PROD-BLANCO-" + (productCount + 1);
 
         Document doc = new Document()
-                .append("_id", customId) // Usar el ID personalizado
+                .append("_id", customId)
                 .append("name", product.getName())
                 .append("description", product.getDescription())
                 .append("price", product.getPrice())
                 .append("stock", product.getStock())
-                .append("imageId", product.getImageId())
-                .append("hasPendingOrders", product.isHasPendingOrders());
+                .append("imageId", product.getImageId());
         productCollection.insertOne(doc);
-        product.setId(customId); // Establecer el ID personalizado en el objeto Product
+        product.setId(customId);
     }
 
     public void update(Product product) {
-        // Validar que el producto no tenga órdenes pendientes
+        Product existingProduct = findById(product.getId());
+        if (existingProduct == null) {
+            throw new IllegalArgumentException("Producto no encontrado: " + product.getId());
+        }
+
+        // Verificar si hay órdenes pendientes
         long pendingOrders = orderCollection.countDocuments(
                 Filters.and(
                         Filters.eq("items.productId", product.getId()),
                         Filters.eq("status", "PENDING")
                 )
         );
+
+        // Permitir actualización del stock incluso si hay órdenes pendientes
+        // Pero restringir cambios en otros campos (nombre, descripción, precio, imagen)
         if (pendingOrders > 0) {
-            throw new IllegalStateException("No se puede actualizar un producto con órdenes pendientes");
+            boolean onlyStockChanged = product.getName().equals(existingProduct.getName()) &&
+                    product.getDescription().equals(existingProduct.getDescription()) &&
+                    product.getPrice() == existingProduct.getPrice() &&
+                    (product.getImageId() == null || product.getImageId().equals(existingProduct.getImageId()));
+            if (!onlyStockChanged) {
+                throw new IllegalStateException("No se puede actualizar un producto con órdenes pendientes, excepto el stock");
+            }
         }
 
-        // Validar precio y stock
         if (product.getPrice() < 0) {
             throw new IllegalArgumentException("El precio no puede ser negativo");
         }
@@ -72,12 +83,21 @@ public class ProductRepository {
                 .append("description", product.getDescription())
                 .append("price", product.getPrice())
                 .append("stock", product.getStock())
-                .append("imageId", product.getImageId())
-                .append("hasPendingOrders", product.isHasPendingOrders());
+                .append("imageId", product.getImageId());
         productCollection.replaceOne(Filters.eq("_id", product.getId()), doc);
     }
 
     public void delete(String id) {
+        long pendingOrders = orderCollection.countDocuments(
+                Filters.and(
+                        Filters.eq("items.productId", id),
+                        Filters.eq("status", "PENDING")
+                )
+        );
+        if (pendingOrders > 0) {
+            throw new IllegalStateException("No se puede eliminar un producto con órdenes pendientes");
+        }
+
         Product product = findById(id);
         if (product != null && product.getImageId() != null) {
             deleteImage(product.getImageId());
@@ -89,7 +109,6 @@ public class ProductRepository {
         Document doc = productCollection.find(Filters.eq("_id", id)).first();
         if (doc == null) return null;
         Product product = new Product();
-        // Manejar el _id que puede ser String o ObjectId
         Object idValue = doc.get("_id");
         product.setId(idValue instanceof ObjectId ? idValue.toString() : (String) idValue);
         product.setName(doc.getString("name"));
@@ -97,7 +116,6 @@ public class ProductRepository {
         product.setPrice(doc.getDouble("price"));
         product.setStock(doc.getInteger("stock"));
         product.setImageId(doc.getString("imageId"));
-        product.setHasPendingOrders(doc.getBoolean("hasPendingOrders", false));
         return product;
     }
 
@@ -110,7 +128,6 @@ public class ProductRepository {
                 .skip(skip)
                 .limit(pageSize)) {
             Product product = new Product();
-            // Manejar el _id que puede ser String o ObjectId
             Object idValue = doc.get("_id");
             product.setId(idValue instanceof ObjectId ? idValue.toString() : (String) idValue);
             product.setName(doc.getString("name"));
@@ -118,7 +135,6 @@ public class ProductRepository {
             product.setPrice(doc.getDouble("price"));
             product.setStock(doc.getInteger("stock"));
             product.setImageId(doc.getString("imageId"));
-            product.setHasPendingOrders(doc.getBoolean("hasPendingOrders", false));
             products.add(product);
         }
         return products;

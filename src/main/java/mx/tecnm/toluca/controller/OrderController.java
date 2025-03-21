@@ -54,17 +54,12 @@ public class OrderController extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Configurar la respuesta como JSON
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        // Obtener todas las órdenes
-        List<Order> orders = orderService.getOrders(1, Integer.MAX_VALUE); // Obtener todas las órdenes
-
-        // Convertir a JSON
+        List<Order> orders = orderService.getOrders(1, Integer.MAX_VALUE);
         String json = gson.toJson(orders);
 
-        // Enviar la respuesta
         PrintWriter out = response.getWriter();
         out.print(json);
         out.flush();
@@ -72,7 +67,6 @@ public class OrderController extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Leer el cuerpo de la solicitud (JSON)
         StringBuilder sb = new StringBuilder();
         try (BufferedReader reader = request.getReader()) {
             String line;
@@ -86,7 +80,6 @@ public class OrderController extends HttpServlet {
         }
 
         try {
-            // Parsear el JSON
             String jsonBody = sb.toString();
             if (jsonBody.isEmpty()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -96,7 +89,6 @@ public class OrderController extends HttpServlet {
 
             JsonObject jsonObject = JsonParser.parseString(jsonBody).getAsJsonObject();
 
-            // Validar campos requeridos
             if (!jsonObject.has("customerId") || jsonObject.get("customerId").isJsonNull()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 response.getWriter().write("{\"error\": \"Falta el campo customerId\"}");
@@ -108,11 +100,9 @@ public class OrderController extends HttpServlet {
                 return;
             }
 
-            // Crear la orden
             Order order = new Order();
             order.setCustomerId(jsonObject.get("customerId").getAsString());
 
-            // Obtener la lista de ítems
             JsonArray itemsArray = jsonObject.getAsJsonArray("items");
             if (itemsArray.size() == 0) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -124,7 +114,6 @@ public class OrderController extends HttpServlet {
             for (int i = 0; i < itemsArray.size(); i++) {
                 JsonObject itemObject = itemsArray.get(i).getAsJsonObject();
 
-                // Validar campos del ítem
                 if (!itemObject.has("productId") || itemObject.get("productId").isJsonNull()) {
                     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                     response.getWriter().write("{\"error\": \"Falta el campo productId en el ítem " + i + "\"}");
@@ -148,19 +137,20 @@ public class OrderController extends HttpServlet {
             }
             order.setItems(items);
 
-            // Guardar la orden con validaciones
             orderService.addOrder(order);
 
-            // Responder con éxito
             response.setStatus(HttpServletResponse.SC_CREATED);
             response.setContentType("application/json");
             response.getWriter().write(gson.toJson(order));
         } catch (IllegalArgumentException e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
+        } catch (IllegalStateException e) {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.getWriter().write("{\"error\": \"Formato de solicitud inválido: " + e.getMessage() + "\"}");
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("{\"error\": \"Error interno del servidor: " + e.getMessage() + "\"}");
         }
     }
 }

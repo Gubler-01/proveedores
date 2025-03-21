@@ -3,6 +3,7 @@
 <%@ page import="mx.tecnm.toluca.model.Product" %>
 <%@ page import="java.util.List" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%
     User user = (User) session.getAttribute("user");
     if (user == null) {
@@ -58,7 +59,7 @@
                             <td><span class="custom-id">${product.id}</span></td>
                             <td>${product.name}</td>
                             <td>${product.description}</td>
-                            <td>$${product.price}</td>
+                            <td>$<fmt:formatNumber value="${product.price}" pattern="#,##0.00"/></td>
                             <td>${product.stock}</td>
                             <td>
                                 <c:if test="${not empty product.imageId}">

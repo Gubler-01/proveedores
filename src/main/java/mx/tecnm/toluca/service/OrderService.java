@@ -31,14 +31,6 @@ public class OrderService {
             item.setUnitPrice(product.getPrice());
         }
 
-        // Actualizar el stock de cada producto
-        for (OrderItem item : order.getItems()) {
-            Product product = productService.getProductById(item.getProductId());
-            product.setStock(product.getStock() - item.getQuantity());
-            product.setHasPendingOrders(true);
-            productService.updateProduct(product, null, null);
-        }
-
         // Calcular subtotal y total
         order.calculateTotals();
 
@@ -81,22 +73,6 @@ public class OrderService {
 
         // Registrar en auditoría
         orderRepository.saveAudit(order.getId(), "UPDATED", "Estado cambiado de " + previousStatus + " a " + order.getStatus());
-
-        if ("COMPLETED".equals(order.getStatus()) || "CANCELLED".equals(order.getStatus())) {
-            for (OrderItem item : order.getItems()) {
-                Product product = productService.getProductById(item.getProductId());
-                if (product != null) {
-                    long pendingOrders = existingOrders.stream()
-                            .filter(o -> o.getItems().stream().anyMatch(i -> i.getProductId().equals(item.getProductId())))
-                            .filter(o -> "PENDING".equals(o.getStatus()))
-                            .count();
-                    if (pendingOrders <= 1) {
-                        product.setHasPendingOrders(false);
-                        productService.updateProduct(product, null, null);
-                    }
-                }
-            }
-        }
     }
 
     public void acceptOrder(String orderId) throws IllegalArgumentException {
@@ -123,6 +99,13 @@ public class OrderService {
             if (product.getStock() < item.getQuantity()) {
                 throw new IllegalArgumentException("Stock insuficiente para el producto " + item.getProductId() + ". Stock disponible: " + product.getStock());
             }
+        }
+
+        // Reducir el stock de cada producto
+        for (OrderItem item : order.getItems()) {
+            Product product = productService.getProductById(item.getProductId());
+            product.setStock(product.getStock() - item.getQuantity());
+            productService.updateProduct(product, null, null);
         }
 
         order.setStatus("ACCEPTED");
@@ -160,24 +143,6 @@ public class OrderService {
 
         // Registrar en auditoría el cambio a CANCELLED
         orderRepository.saveAudit(orderId, "CANCELLED", "Orden cancelada automáticamente tras ser rechazada");
-
-        // Devolver el stock de cada producto
-        for (OrderItem item : order.getItems()) {
-            Product product = productService.getProductById(item.getProductId());
-            if (product != null) {
-                product.setStock(product.getStock() + item.getQuantity());
-                productService.updateProduct(product, null, null);
-
-                long pendingOrders = existingOrders.stream()
-                        .filter(o -> o.getItems().stream().anyMatch(i -> i.getProductId().equals(item.getProductId())))
-                        .filter(o -> "PENDING".equals(o.getStatus()))
-                        .count();
-                if (pendingOrders <= 1) {
-                    product.setHasPendingOrders(false);
-                    productService.updateProduct(product, null, null);
-                }
-            }
-        }
     }
 
     public List<OrderAudit> getAuditByOrderId(String orderId) {

@@ -47,7 +47,14 @@ public class ProductController extends HttpServlet {
             int pageSize = 5;
             String pageParam = request.getParameter("page");
             if (pageParam != null) {
-                page = Integer.parseInt(pageParam);
+                try {
+                    page = Integer.parseInt(pageParam);
+                    if (page < 1) {
+                        page = 1;
+                    }
+                } catch (NumberFormatException e) {
+                    page = 1;
+                }
             }
 
             System.out.println("Cargando productos en doGet para página: " + page);
@@ -68,7 +75,14 @@ public class ProductController extends HttpServlet {
             int pageSize = 5;
             String pageParam = request.getParameter("page");
             if (pageParam != null) {
-                page = Integer.parseInt(pageParam);
+                try {
+                    page = Integer.parseInt(pageParam);
+                    if (page < 1) {
+                        page = 1;
+                    }
+                } catch (NumberFormatException e) {
+                    page = 1;
+                }
             }
 
             System.out.println("Cargando órdenes en doGet para página: " + page);
@@ -128,7 +142,7 @@ public class ProductController extends HttpServlet {
             Product product = new Product();
             product.setName(request.getParameter("name"));
             product.setDescription(request.getParameter("description"));
-            
+
             // Validar precio
             double price;
             try {
@@ -169,8 +183,12 @@ public class ProductController extends HttpServlet {
                 imageName = imagePart.getSubmittedFileName();
             }
 
-            productService.addProduct(product, imageStream, imageName);
-            session.setAttribute("message", "Producto agregado exitosamente");
+            try {
+                productService.addProduct(product, imageStream, imageName);
+                session.setAttribute("message", "Producto agregado exitosamente");
+            } catch (IllegalArgumentException e) {
+                session.setAttribute("error", e.getMessage());
+            }
             response.sendRedirect(request.getContextPath() + "/dashboard");
         } else if ("/products/update".equals(pathInfo)) {
             Product product = new Product();
@@ -211,8 +229,12 @@ public class ProductController extends HttpServlet {
             product.setStock(stock);
 
             Product existingProduct = productService.getProductById(product.getId());
+            if (existingProduct == null) {
+                session.setAttribute("error", "Producto no encontrado");
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
             product.setImageId(existingProduct.getImageId());
-            product.setHasPendingOrders(existingProduct.isHasPendingOrders());
 
             Part imagePart = request.getPart("image");
             InputStream imageStream = null;
@@ -222,8 +244,14 @@ public class ProductController extends HttpServlet {
                 imageName = imagePart.getSubmittedFileName();
             }
 
-            productService.updateProduct(product, imageStream, imageName);
-            session.setAttribute("message", "Producto actualizado exitosamente");
+            try {
+                productService.updateProduct(product, imageStream, imageName);
+                session.setAttribute("message", "Producto actualizado exitosamente");
+            } catch (IllegalStateException e) {
+                session.setAttribute("error", e.getMessage());
+            } catch (IllegalArgumentException e) {
+                session.setAttribute("error", e.getMessage());
+            }
             response.sendRedirect(request.getContextPath() + "/dashboard");
         } else if ("/products/delete".equals(pathInfo)) {
             String id = request.getParameter("id");
@@ -233,11 +261,12 @@ public class ProductController extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/dashboard");
                 return;
             }
-            if (product.isHasPendingOrders()) {
-                session.setAttribute("error", "No se puede eliminar el producto porque tiene órdenes pendientes");
-            } else {
+
+            try {
                 productService.deleteProduct(id);
                 session.setAttribute("message", "Producto eliminado exitosamente");
+            } catch (IllegalStateException e) {
+                session.setAttribute("error", e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + "/dashboard");
         } else if ("/orders/update".equals(pathInfo)) {
@@ -280,6 +309,8 @@ public class ProductController extends HttpServlet {
                 session.setAttribute("message", "Orden aceptada exitosamente");
             } catch (IllegalArgumentException e) {
                 session.setAttribute("error", e.getMessage());
+            } catch (IllegalStateException e) {
+                session.setAttribute("error", "Error al aceptar la orden: " + e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + "/orders");
         } else if ("/orders/reject".equals(pathInfo)) {
@@ -290,6 +321,8 @@ public class ProductController extends HttpServlet {
                 session.setAttribute("message", "Orden rechazada y cancelada exitosamente");
             } catch (IllegalArgumentException e) {
                 session.setAttribute("error", e.getMessage());
+            } catch (IllegalStateException e) {
+                session.setAttribute("error", "Error al rechazar la orden: " + e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + "/orders");
         }
