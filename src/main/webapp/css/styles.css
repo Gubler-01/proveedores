@@ -243,3 +243,197 @@ body {
 .add-product-form button:hover {
     background-color: #357ab7;
 }
+
+/* Estilos para el modal de auditoría */
+.modal-content {
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+}
+
+.modal-header {
+    background-color: #f0f8ff;
+    border-bottom: 2px solid #4a90e2;
+    border-radius: 10px 10px 0 0;
+}
+
+.modal-title {
+    color: #4a90e2;
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.audit-table th,
+.audit-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.audit-table th {
+    background-color: #f0f8ff;
+    color: #4a90e2;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.audit-table td {
+    color: #333;
+}
+
+.audit-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+.modal-footer .btn-secondary {
+    background-color: #6c757d;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 14px;
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Estilos específicos para la tabla de órdenes */
+.order-list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 14px;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.order-list th,
+.order-list td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.order-list th {
+    background-color: #28a745; /* Verde para diferenciar de la tabla de productos */
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 14px;
+}
+
+.order-list tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.order-list td {
+    font-size: 14px;
+    color: #555;
+}
+
+.order-list ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+.order-list ul li {
+    margin-bottom: 5px;
+}
+
+/* Ajustar el ancho de las columnas para la tabla de órdenes */
+.order-list th:nth-child(1),
+.order-list td:nth-child(1) { /* ID */
+    width: 10%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.order-list th:nth-child(2),
+.order-list td:nth-child(2) { /* Productos */
+    width: 25%;
+}
+
+.order-list th:nth-child(3),
+.order-list td:nth-child(3) { /* Subtotal */
+    width: 10%;
+}
+
+.order-list th:nth-child(4),
+.order-list td:nth-child(4) { /* Total */
+    width: 10%;
+}
+
+.order-list th:nth-child(5),
+.order-list td:nth-child(5) { /* Fecha */
+    width: 15%;
+}
+
+.order-list th:nth-child(6),
+.order-list td:nth-child(6) { /* Estado */
+    width: 10%;
+}
+
+.order-list th:nth-child(7),
+.order-list td:nth-child(7) { /* Cliente ID */
+    width: 10%;
+}
+
+.order-list th:nth-child(8),
+.order-list td:nth-child(8) { /* Acciones */
+    width: 20%;
+    text-align: center;
+}
+
+.order-list .action-buttons {
+    display: flex;
+    justify-content: center; /* Centrar los botones horizontalmente */
+    align-items: center; /* Centrar verticalmente */
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.order-list th:nth-child(8),
+.order-list td:nth-child(8) { /* Acciones */
+    width: 20%;
+    text-align: center;
+}
+
+.order-list .action-buttons a,
+.order-list .action-buttons button {
+    margin: 0;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.order-list .action-buttons .btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.order-list .action-buttons .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.order-list .action-buttons .btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.order-list .action-buttons .btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}

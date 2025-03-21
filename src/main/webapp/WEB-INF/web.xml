@@ -16,8 +16,11 @@
         <url-pattern>/dashboard</url-pattern>
         <url-pattern>/products.jsp</url-pattern>
         <url-pattern>/products/*</url-pattern>
-        <url-pattern>/orders</url-pattern> <!-- Agregar /orders al filtro -->
-        <url-pattern>/orders/update</url-pattern> <!-- Agregar /orders/update al filtro -->
+        <url-pattern>/orders</url-pattern>
+        <url-pattern>/orders/update</url-pattern>
+        <url-pattern>/orders/accept</url-pattern> <!-- Agregar /orders/accept al filtro -->
+        <url-pattern>/orders/reject</url-pattern> <!-- Agregar /orders/reject al filtro -->
+        <url-pattern>/orders/audit</url-pattern>  <!-- Agregar /orders/audit al filtro -->
     </filter-mapping>
     
     <!-- Registro del ImageServlet -->
@@ -62,8 +65,11 @@
         <url-pattern>/products/add</url-pattern>
         <url-pattern>/products/update</url-pattern>
         <url-pattern>/products/delete</url-pattern>
-        <url-pattern>/orders</url-pattern> <!-- Agregar /orders -->
-        <url-pattern>/orders/update</url-pattern> <!-- Agregar /orders/update -->
+        <url-pattern>/orders</url-pattern>
+        <url-pattern>/orders/update</url-pattern>
+        <url-pattern>/orders/accept</url-pattern> <!-- Agregar /orders/accept -->
+        <url-pattern>/orders/reject</url-pattern> <!-- Agregar /orders/reject -->
+        <url-pattern>/orders/audit</url-pattern>  <!-- Agregar /orders/audit -->
     </servlet-mapping>
     
     <filter>

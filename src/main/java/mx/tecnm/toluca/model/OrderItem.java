@@ -3,7 +3,16 @@ package mx.tecnm.toluca.model;
 public class OrderItem {
     private String productId;
     private int quantity;
-    private double price;
+    private double unitPrice;
+
+    // Constructor
+    public OrderItem() {}
+
+    public OrderItem(String productId, int quantity, double unitPrice) {
+        this.productId = productId;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+    }
 
     // Getters y Setters
     public String getProductId() {
@@ -22,11 +31,15 @@ public class OrderItem {
         this.quantity = quantity;
     }
 
-    public double getPrice() {
-        return price;
+    public double getUnitPrice() {
+        return unitPrice;
     }
 
-    public void setPrice(double price) {
-        this.price = price;
+    public void setUnitPrice(double unitPrice) {
+        this.unitPrice = unitPrice;
+    }
+
+    public double getSubtotal() {
+        return quantity * unitPrice;
     }
 }

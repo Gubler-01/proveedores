@@ -19,12 +19,14 @@ import java.util.List;
 
 public class ProductRepository {
     private final MongoCollection<Document> productCollection;
+    private final MongoCollection<Document> orderCollection; // Agregar colección de órdenes
     private final GridFSBucket gridFSBucket;
 
     public ProductRepository() {
         MongoClient mongoClient = MongoClients.create("mongodb://localhost:27017");
         MongoDatabase database = mongoClient.getDatabase("supplier_db");
         this.productCollection = database.getCollection("products");
+        this.orderCollection = database.getCollection("orders"); // Inicializar colección de órdenes
         this.gridFSBucket = GridFSBuckets.create(database);
     }
 
@@ -46,6 +48,25 @@ public class ProductRepository {
     }
 
     public void update(Product product) {
+        // Validar que el producto no tenga órdenes pendientes
+        long pendingOrders = orderCollection.countDocuments(
+                Filters.and(
+                        Filters.eq("items.productId", product.getId()),
+                        Filters.eq("status", "PENDING")
+                )
+        );
+        if (pendingOrders > 0) {
+            throw new IllegalStateException("No se puede actualizar un producto con órdenes pendientes");
+        }
+
+        // Validar precio y stock
+        if (product.getPrice() < 0) {
+            throw new IllegalArgumentException("El precio no puede ser negativo");
+        }
+        if (product.getStock() < 0) {
+            throw new IllegalArgumentException("El stock no puede ser negativo");
+        }
+
         Document doc = new Document()
                 .append("name", product.getName())
                 .append("description", product.getDescription())

@@ -1,8 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="mx.tecnm.toluca.model.User" %>
 <%@ page import="mx.tecnm.toluca.model.Order" %>
+<%@ page import="mx.tecnm.toluca.model.OrderItem" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%
     User user = (User) session.getAttribute("user");
     if (user == null) {
@@ -12,6 +15,10 @@
     List<Order> orders = (List<Order>) request.getAttribute("orders");
     if (orders == null) {
         orders = java.util.Collections.emptyList();
+    }
+    Map<String, Boolean> hasBeenProcessed = (Map<String, Boolean>) request.getAttribute("hasBeenProcessed");
+    if (hasBeenProcessed == null) {
+        hasBeenProcessed = java.util.Collections.emptyMap();
     }
     String message = (String) session.getAttribute("message");
     String error = (String) session.getAttribute("error");
@@ -40,12 +47,14 @@
         </div>
         <div>
             <h3>Lista de Órdenes</h3>
-            <table class="product-list table table-striped">
+            <table class="order-list table table-striped">
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Producto ID</th>
-                        <th>Cantidad</th>
+                        <th>Productos</th>
+                        <th>Subtotal</th>
+                        <th>Total</th>
+                        <th>Fecha</th>
                         <th>Estado</th>
                         <th>Cliente ID</th>
                         <th>Acciones</th>
@@ -54,13 +63,36 @@
                 <tbody>
                     <c:forEach var="order" items="${orders}">
                         <tr>
-                            <td><span class="custom-id">${order.id}</span></td>
-                            <td>${order.productId}</td>
-                            <td>${order.quantity}</td>
+                            <td><span class="custom-id">${order.customId}</span></td>
+                            <td>
+                                <ul>
+                                    <c:forEach var="item" items="${order.items}">
+                                        <li>Producto: ${item.productId}, Cantidad: ${item.quantity}, Precio Unitario: $<fmt:formatNumber value="${item.unitPrice}" pattern="#,##0.00"/></li>
+                                    </c:forEach>
+                                </ul>
+                            </td>
+                            <td>$<fmt:formatNumber value="${order.subtotal}" pattern="#,##0.00"/></td>
+                            <td>$<fmt:formatNumber value="${order.total}" pattern="#,##0.00"/></td>
+                            <td><fmt:formatDate value="${order.orderDateAsDate}" pattern="yyyy-MM-dd HH:mm:ss"/></td>
                             <td>${order.status}</td>
                             <td>${order.customerId}</td>
                             <td class="action-buttons">
-                                <a href="#" class="btn btn-warning btn-sm edit-order" data-id="${order.id}" data-status="${order.status}">Cambiar Estado</a>
+                                <c:if test="${order.status == 'PENDING'}">
+                                    <form action="orders/accept" method="post" style="display: inline;">
+                                        <input type="hidden" name="id" value="${order.id}">
+                                        <button type="submit" class="btn btn-success btn-sm">Aceptar</button>
+                                    </form>
+                                    <form action="orders/reject" method="post" style="display: inline;">
+                                        <input type="hidden" name="id" value="${order.id}">
+                                        <button type="submit" class="btn btn-danger btn-sm">Rechazar</button>
+                                    </form>
+                                </c:if>
+                                <c:if test="${order.status != 'PENDING' && order.status != 'COMPLETED' && order.status != 'CANCELLED'}">
+                                    <a href="#" class="btn btn-warning btn-sm edit-order" data-id="${order.id}" data-status="${order.status}">Cambiar Estado</a>
+                                </c:if>
+                                <c:if test="${hasBeenProcessed[order.id]}">
+                                    <a href="orders/audit?orderId=${order.id}&customId=${order.customId}" class="btn btn-info btn-sm">Ver Historial</a>
+                                </c:if>
                             </td>
                         </tr>
                     </c:forEach>
