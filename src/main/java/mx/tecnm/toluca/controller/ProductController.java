@@ -128,6 +128,9 @@ public class ProductController extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Configurar la codificación del request a UTF-8
+        request.setCharacterEncoding("UTF-8");
+
         String pathInfo = request.getServletPath();
         System.out.println("Solicitud POST recibida para: " + pathInfo);
 

@@ -67,6 +67,9 @@ public class OrderController extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Configurar la codificación del request a UTF-8
+        request.setCharacterEncoding("UTF-8");
+        
         StringBuilder sb = new StringBuilder();
         try (BufferedReader reader = request.getReader()) {
             String line;
