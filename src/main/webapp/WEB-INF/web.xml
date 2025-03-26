@@ -14,64 +14,27 @@
     <filter-mapping>
         <filter-name>AuthenticationFilter</filter-name>
         <url-pattern>/dashboard</url-pattern>
-        <url-pattern>/products.jsp</url-pattern>
         <url-pattern>/products/*</url-pattern>
         <url-pattern>/orders</url-pattern>
         <url-pattern>/orders/update</url-pattern>
-        <url-pattern>/orders/accept</url-pattern> <!-- Agregar /orders/accept al filtro -->
-        <url-pattern>/orders/reject</url-pattern> <!-- Agregar /orders/reject al filtro -->
-        <url-pattern>/orders/audit</url-pattern>  <!-- Agregar /orders/audit al filtro -->
+        <url-pattern>/orders/accept</url-pattern>
+        <url-pattern>/orders/reject</url-pattern>
+        <url-pattern>/orders/audit</url-pattern>
     </filter-mapping>
-    
-    <!-- Registro del ImageServlet -->
-    <servlet>
-        <servlet-name>ImageServlet</servlet-name>
-        <servlet-class>mx.tecnm.toluca.controller.ImageServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>ImageServlet</servlet-name>
-        <url-pattern>/image</url-pattern>
-    </servlet-mapping>
-    
-    <servlet>
-        <servlet-name>ProductApiController</servlet-name>
-        <servlet-class>mx.tecnm.toluca.controller.ProductApiController</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>ProductApiController</servlet-name>
-        <url-pattern>/api/products</url-pattern>
-    </servlet-mapping>
 
-    <!-- Registro del Servlet AuthController -->
-    <servlet>
-        <servlet-name>AuthController</servlet-name>
-        <servlet-class>mx.tecnm.toluca.controller.AuthController</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>AuthController</servlet-name>
-        <url-pattern>/login</url-pattern>
-        <url-pattern>/logout</url-pattern>
-    </servlet-mapping>
-
-    <!-- Registro del Servlet ProductController -->
-    <servlet>
-        <servlet-name>ProductController</servlet-name>
-        <servlet-class>mx.tecnm.toluca.controller.ProductController</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>ProductController</servlet-name>
+    <!-- Registro del Filtro JwtFilter -->
+    <filter>
+        <filter-name>JwtFilter</filter-name>
+        <filter-class>mx.tecnm.toluca.filter.JwtFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>JwtFilter</filter-name>
         <url-pattern>/dashboard</url-pattern>
-        <url-pattern>/products</url-pattern>
-        <url-pattern>/products/add</url-pattern>
-        <url-pattern>/products/update</url-pattern>
-        <url-pattern>/products/delete</url-pattern>
-        <url-pattern>/orders</url-pattern>
-        <url-pattern>/orders/update</url-pattern>
-        <url-pattern>/orders/accept</url-pattern> <!-- Agregar /orders/accept -->
-        <url-pattern>/orders/reject</url-pattern> <!-- Agregar /orders/reject -->
-        <url-pattern>/orders/audit</url-pattern>  <!-- Agregar /orders/audit -->
-    </servlet-mapping>
-    
+        <url-pattern>/products/*</url-pattern>
+        <url-pattern>/orders/*</url-pattern>
+    </filter-mapping>
+
+    <!-- Registro del Filtro LoginAccessFilter -->
     <filter>
         <filter-name>LoginAccessFilter</filter-name>
         <filter-class>mx.tecnm.toluca.config.LoginAccessFilter</filter-class>
@@ -81,6 +44,16 @@
         <url-pattern>/index.jsp</url-pattern>
         <url-pattern>/login</url-pattern>
     </filter-mapping>
+
+    <!-- Registro del ImageServlet -->
+    <servlet>
+        <servlet-name>ImageServlet</servlet-name>
+        <servlet-class>mx.tecnm.toluca.controller.ImageServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ImageServlet</servlet-name>
+        <url-pattern>/image</url-pattern>
+    </servlet-mapping>
 
     <!-- Definir página de inicio -->
     <welcome-file-list>

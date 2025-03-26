@@ -1,159 +1,210 @@
 package mx.tecnm.toluca.controller;
 
-import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
+import mx.tecnm.toluca.model.Order;
+import mx.tecnm.toluca.model.OrderAudit;
+import mx.tecnm.toluca.repository.OrderRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import mx.tecnm.toluca.model.Order;
-import mx.tecnm.toluca.model.OrderItem;
-import mx.tecnm.toluca.service.OrderService;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.lang.reflect.Type;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
-@WebServlet(name = "OrderController", urlPatterns = {"/api/orders"})
+@WebServlet(name = "OrderController", urlPatterns = {"/orders", "/orders/accept", "/orders/reject", "/orders/update", "/orders/audit"})
 public class OrderController extends HttpServlet {
-    private OrderService orderService;
-    private Gson gson;
+    private OrderRepository orderRepository;
 
     @Override
     public void init() throws ServletException {
-        super.init();
-        orderService = new OrderService();
-
-        // Configurar Gson con un adaptador para LocalDateTime
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
-            private final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
-            @Override
-            public JsonElement serialize(LocalDateTime src, Type typeOfSrc, JsonSerializationContext context) {
-                return new JsonPrimitive(formatter.format(src));
-            }
-        });
-        gsonBuilder.registerTypeAdapter(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
-            private final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
-            @Override
-            public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-                return LocalDateTime.parse(json.getAsString(), formatter);
-            }
-        });
-        gson = gsonBuilder.create();
+        orderRepository = new OrderRepository();
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
+        String pathInfo = request.getRequestURI().substring(request.getContextPath().length());
 
-        List<Order> orders = orderService.getOrders(1, Integer.MAX_VALUE);
-        String json = gson.toJson(orders);
-
-        PrintWriter out = response.getWriter();
-        out.print(json);
-        out.flush();
+        if (pathInfo.equals("/orders") || pathInfo.equals("/orders/")) {
+            handleShowOrders(request, response);
+        } else if (pathInfo.startsWith("/orders/audit")) {
+            handleShowAudit(request, response);
+        } else {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Ruta no encontrada");
+        }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Configurar la codificación del request a UTF-8
-        request.setCharacterEncoding("UTF-8");
-        
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader reader = request.getReader()) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
-        } catch (IOException e) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.getWriter().write("{\"error\": \"Error al leer el cuerpo de la solicitud: " + e.getMessage() + "\"}");
-            return;
+        String pathInfo = request.getRequestURI().substring(request.getContextPath().length());
+
+        switch (pathInfo) {
+            case "/orders/accept":
+                handleAcceptOrder(request, response);
+                break;
+            case "/orders/reject":
+                handleRejectOrder(request, response);
+                break;
+            case "/orders/update":
+                handleUpdateOrder(request, response);
+                break;
+            default:
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Ruta no encontrada");
         }
+    }
 
+    private void handleShowOrders(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
-            String jsonBody = sb.toString();
-            if (jsonBody.isEmpty()) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\": \"El cuerpo de la solicitud está vacío\"}");
-                return;
+            // Obtener el número de página desde los parámetros (por defecto, página 1)
+            String pageParam = request.getParameter("page");
+            int page = pageParam != null ? Integer.parseInt(pageParam) : 1;
+            int pageSize = 10; // Número de órdenes por página
+
+            // Cargar las órdenes para la página actual
+            List<Order> orders = orderRepository.findAll(request, page, pageSize);
+
+            // Determinar cuáles órdenes han sido procesadas (tienen auditoría)
+            Map<String, Boolean> hasBeenProcessed = new HashMap<>();
+            for (Order order : orders) {
+                List<OrderAudit> auditEntries = orderRepository.findAuditByOrderId(request, order.getId());
+                hasBeenProcessed.put(order.getId(), !auditEntries.isEmpty());
             }
 
-            JsonObject jsonObject = JsonParser.parseString(jsonBody).getAsJsonObject();
+            // Calcular el total de páginas
+            long totalOrders = orderRepository.count(request);
+            int totalPages = (int) Math.ceil((double) totalOrders / pageSize);
+            if (totalPages == 0) totalPages = 1;
 
-            if (!jsonObject.has("customerId") || jsonObject.get("customerId").isJsonNull()) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\": \"Falta el campo customerId\"}");
-                return;
-            }
-            if (!jsonObject.has("items") || !jsonObject.get("items").isJsonArray()) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\": \"Falta el campo items o no es un arreglo\"}");
-                return;
-            }
+            // Establecer atributos para la JSP
+            request.setAttribute("orders", orders);
+            request.setAttribute("hasBeenProcessed", hasBeenProcessed);
+            request.setAttribute("currentPage", page);
+            request.setAttribute("totalPages", totalPages);
 
-            Order order = new Order();
-            order.setCustomerId(jsonObject.get("customerId").getAsString());
-
-            JsonArray itemsArray = jsonObject.getAsJsonArray("items");
-            if (itemsArray.size() == 0) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\": \"La lista de ítems no puede estar vacía\"}");
-                return;
-            }
-
-            List<OrderItem> items = new ArrayList<>();
-            for (int i = 0; i < itemsArray.size(); i++) {
-                JsonObject itemObject = itemsArray.get(i).getAsJsonObject();
-
-                if (!itemObject.has("productId") || itemObject.get("productId").isJsonNull()) {
-                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    response.getWriter().write("{\"error\": \"Falta el campo productId en el ítem " + i + "\"}");
-                    return;
-                }
-                if (!itemObject.has("quantity") || itemObject.get("quantity").isJsonNull()) {
-                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    response.getWriter().write("{\"error\": \"Falta el campo quantity en el ítem " + i + "\"}");
-                    return;
-                }
-
-                OrderItem item = new OrderItem();
-                item.setProductId(itemObject.get("productId").getAsString());
-                item.setQuantity(itemObject.get("quantity").getAsInt());
-                if (item.getQuantity() <= 0) {
-                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    response.getWriter().write("{\"error\": \"La cantidad debe ser mayor que 0 en el ítem " + i + "\"}");
-                    return;
-                }
-                items.add(item);
-            }
-            order.setItems(items);
-
-            orderService.addOrder(order);
-
-            response.setStatus(HttpServletResponse.SC_CREATED);
-            response.setContentType("application/json");
-            response.getWriter().write(gson.toJson(order));
-        } catch (IllegalArgumentException e) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
-        } catch (IllegalStateException e) {
-            response.setStatus(HttpServletResponse.SC_CONFLICT);
-            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
+            // Redirigir a orders.jsp
+            request.getRequestDispatcher("/WEB-INF/orders.jsp").forward(request, response);
         } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write("{\"error\": \"Error interno del servidor: " + e.getMessage() + "\"}");
+            request.getSession().setAttribute("error", "Error al cargar las órdenes: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/dashboard");
+        }
+    }
+
+    private void handleAcceptOrder(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        try {
+            String id = request.getParameter("id");
+
+            // Buscar la orden existente
+            List<Order> orders = orderRepository.findAll(request, 1, Integer.MAX_VALUE);
+            Order order = orders.stream()
+                    .filter(o -> o.getId().equals(id))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + id));
+
+            // Verificar si la orden está en estado PENDING
+            if (!"PENDING".equals(order.getStatus())) {
+                throw new IllegalStateException("La orden no está en estado PENDING y no puede ser aceptada");
+            }
+
+            // Actualizar el estado a PROCESSING
+            String oldStatus = order.getStatus();
+            order.setStatus("PROCESSING");
+            orderRepository.update(request, order);
+
+            // Guardar un registro de auditoría
+            orderRepository.saveAudit(request, id, "ACCEPT_ORDER", "Orden aceptada. Estado cambiado de " + oldStatus + " a PROCESSING");
+
+            request.getSession().setAttribute("message", "Orden aceptada exitosamente");
+            response.sendRedirect(request.getContextPath() + "/orders");
+        } catch (Exception e) {
+            request.getSession().setAttribute("error", "Error al aceptar la orden: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/orders");
+        }
+    }
+
+    private void handleRejectOrder(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        try {
+            String id = request.getParameter("id");
+
+            // Buscar la orden existente
+            List<Order> orders = orderRepository.findAll(request, 1, Integer.MAX_VALUE);
+            Order order = orders.stream()
+                    .filter(o -> o.getId().equals(id))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + id));
+
+            // Verificar si la orden está en estado PENDING
+            if (!"PENDING".equals(order.getStatus())) {
+                throw new IllegalStateException("La orden no está en estado PENDING y no puede ser rechazada");
+            }
+
+            // Actualizar el estado a CANCELLED
+            String oldStatus = order.getStatus();
+            order.setStatus("CANCELLED");
+            orderRepository.update(request, order);
+
+            // Guardar un registro de auditoría
+            orderRepository.saveAudit(request, id, "REJECT_ORDER", "Orden rechazada. Estado cambiado de " + oldStatus + " a CANCELLED");
+
+            request.getSession().setAttribute("message", "Orden rechazada exitosamente");
+            response.sendRedirect(request.getContextPath() + "/orders");
+        } catch (Exception e) {
+            request.getSession().setAttribute("error", "Error al rechazar la orden: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/orders");
+        }
+    }
+
+    private void handleUpdateOrder(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        try {
+            String id = request.getParameter("id");
+            String status = request.getParameter("status");
+
+            // Buscar la orden existente
+            List<Order> orders = orderRepository.findAll(request, 1, Integer.MAX_VALUE);
+            Order order = orders.stream()
+                    .filter(o -> o.getId().equals(id))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + id));
+
+            // Verificar si el estado es válido
+            if (!List.of("PENDING", "PROCESSING", "COMPLETED", "CANCELLED").contains(status)) {
+                throw new IllegalArgumentException("Estado no válido: " + status);
+            }
+
+            // Actualizar el estado
+            String oldStatus = order.getStatus();
+            order.setStatus(status);
+            orderRepository.update(request, order);
+
+            // Guardar un registro de auditoría
+            orderRepository.saveAudit(request, id, "UPDATE_STATUS", "Estado cambiado de " + oldStatus + " a " + status);
+
+            request.getSession().setAttribute("message", "Estado de la orden actualizado exitosamente");
+            response.sendRedirect(request.getContextPath() + "/orders");
+        } catch (Exception e) {
+            request.getSession().setAttribute("error", "Error al actualizar la orden: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/orders");
+        }
+    }
+
+    private void handleShowAudit(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        try {
+            String orderId = request.getParameter("orderId");
+            String customId = request.getParameter("customId");
+
+            // Obtener el historial de auditoría
+            List<OrderAudit> auditEntries = orderRepository.findAuditByOrderId(request, orderId);
+
+            // Establecer atributos para la JSP
+            request.setAttribute("orderId", orderId);
+            request.setAttribute("customId", customId);
+            request.setAttribute("auditEntries", auditEntries);
+
+            // Redirigir a audit.jsp
+            request.getRequestDispatcher("/WEB-INF/audit.jsp").forward(request, response);
+        } catch (Exception e) {
+            request.getSession().setAttribute("error", "Error al cargar el historial de auditoría: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/orders");
         }
     }
 }

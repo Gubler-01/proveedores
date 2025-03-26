@@ -1,13 +1,12 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="mx.tecnm.toluca.model.User" %>
 <%@ page import="mx.tecnm.toluca.model.Product" %>
 <%@ page import="java.util.List" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%
-    User user = (User) session.getAttribute("user");
-    if (user == null) {
-        response.sendRedirect(request.getContextPath() + "/index.jsp");
+    String email = (String) session.getAttribute("email");
+    if (email == null) {
+        response.sendRedirect(request.getContextPath() + "/");
         return;
     }
     List<Product> products = (List<Product>) request.getAttribute("products");
@@ -33,10 +32,10 @@
 <body>
     <div class="container">
         <div class="dashboard-header">
-            <h2>Bienvenido Administrador, <%= user.getName() %>!</h2>
+            <h2>Bienvenido Administrador, <%= email %>!</h2>
             <div class="dashboard-buttons">
-                <a href="orders"><button class="btn btn-primary">Administrar Órdenes</button></a>
-                <a href="logout"><button class="btn btn-danger">Cerrar Sesión</button></a>
+                <a href="${pageContext.request.contextPath}/orders"><button class="btn btn-primary">Administrar Órdenes</button></a>
+                <a href="${pageContext.request.contextPath}/auth/logout"><button class="btn btn-danger">Cerrar Sesión</button></a>
             </div>
         </div>
         <div>
@@ -62,10 +61,10 @@
                             <td>$<fmt:formatNumber value="${product.price}" pattern="#,##0.00"/></td>
                             <td>${product.stock}</td>
                             <td>
-                                <c:if test="${not empty product.imageId}">
-                                    <img src="${pageContext.request.contextPath}/image?imageId=${product.imageId}" alt="Producto">
+                                <c:if test="${not empty product.imageUrl}">
+                                    <img src="${product.imageUrl}" alt="Producto" style="max-width: 100px; max-height: 100px;">
                                 </c:if>
-                                <c:if test="${empty product.imageId}">
+                                <c:if test="${empty product.imageUrl}">
                                     <span>Sin imagen</span>
                                 </c:if>
                             </td>
@@ -82,13 +81,13 @@
             <nav aria-label="Paginación de productos">
                 <ul class="pagination justify-content-center">
                     <li class="page-item <%= currentPage == 1 ? "disabled" : "" %>">
-                        <a class="page-link" href="dashboard?page=<%= currentPage - 1 %>">Anterior</a>
+                        <a class="page-link" href="${pageContext.request.contextPath}/dashboard?page=<%= currentPage - 1 %>">Anterior</a>
                     </li>
                     <li class="page-item disabled">
                         <span class="page-link">Página <%= currentPage %> de <%= totalPages %></span>
                     </li>
                     <li class="page-item <%= currentPage == totalPages ? "disabled" : "" %>">
-                        <a class="page-link" href="dashboard?page=<%= currentPage + 1 %>">Siguiente</a>
+                        <a class="page-link" href="${pageContext.request.contextPath}/dashboard?page=<%= currentPage + 1 %>">Siguiente</a>
                     </li>
                 </ul>
             </nav>
@@ -107,7 +106,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form action="products/add" method="post" enctype="multipart/form-data" id="addProductForm">
+                        <form action="${pageContext.request.contextPath}/products/add" method="post" enctype="multipart/form-data" id="addProductForm">
                             <div class="mb-3">
                                 <label for="addName" class="form-label">Nombre</label>
                                 <input type="text" class="form-control" id="addName" name="name" required placeholder="Ej. Sábana Blanca">
@@ -144,7 +143,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form action="products/update" method="post" enctype="multipart/form-data" id="editProductForm">
+                        <form action="${pageContext.request.contextPath}/products/update" method="post" enctype="multipart/form-data" id="editProductForm">
                             <input type="hidden" id="editId" name="id">
                             <div class="mb-3">
                                 <label for="editName" class="form-label">Nombre</label>
@@ -186,7 +185,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <form action="products/delete" method="post" id="deleteProductForm" style="display: inline;">
+                        <form action="${pageContext.request.contextPath}/products/delete" method="post" id="deleteProductForm" style="display: inline;">
                             <input type="hidden" id="deleteId" name="id">
                             <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
                         </form>

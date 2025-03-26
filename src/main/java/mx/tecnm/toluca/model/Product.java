@@ -6,7 +6,7 @@ public class Product {
     private String description;
     private double price;
     private int stock;
-    private String imageId; // Campo para almacenar el ID de la imagen en GridFS
+    private String imageUrl; // Cambiado de imageId a imageUrl para almacenar la URL del file server
 
     // Constructor vacío
     public Product() {
@@ -53,11 +53,11 @@ public class Product {
         this.stock = stock;
     }
 
-    public String getImageId() {
-        return imageId;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setImageId(String imageId) {
-        this.imageId = imageId;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

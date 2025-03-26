@@ -1,5 +1,4 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="mx.tecnm.toluca.model.User" %>
 <%@ page import="mx.tecnm.toluca.model.Order" %>
 <%@ page import="mx.tecnm.toluca.model.OrderItem" %>
 <%@ page import="java.util.List" %>
@@ -7,9 +6,9 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%
-    User user = (User) session.getAttribute("user");
-    if (user == null) {
-        response.sendRedirect(request.getContextPath() + "/index.jsp");
+    String email = (String) session.getAttribute("email");
+    if (email == null) {
+        response.sendRedirect(request.getContextPath() + "/");
         return;
     }
     List<Order> orders = (List<Order>) request.getAttribute("orders");
@@ -39,10 +38,10 @@
 <body>
     <div class="container">
         <div class="dashboard-header">
-            <h2>Administrar Órdenes - <%= user.getName() %></h2>
+            <h2>Administrar Órdenes - <%= email %></h2>
             <div class="dashboard-buttons">
-                <a href="dashboard"><button class="btn btn-primary">Volver al Dashboard</button></a>
-                <a href="logout"><button class="btn btn-danger">Cerrar Sesión</button></a>
+                <a href="${pageContext.request.contextPath}/dashboard"><button class="btn btn-primary">Volver al Dashboard</button></a>
+                <a href="${pageContext.request.contextPath}/auth/logout"><button class="btn btn-danger">Cerrar Sesión</button></a>
             </div>
         </div>
         <div>
@@ -73,16 +72,16 @@
                             </td>
                             <td>$<fmt:formatNumber value="${order.subtotal}" pattern="#,##0.00"/></td>
                             <td>$<fmt:formatNumber value="${order.total}" pattern="#,##0.00"/></td>
-                            <td><fmt:formatDate value="${order.orderDateAsDate}" pattern="yyyy-MM-dd HH:mm:ss"/></td>
+                            <td><fmt:formatDate value="${order.orderDateAsDate}" pattern="dd/MM/yyyy HH:mm"/></td>
                             <td>${order.status}</td>
                             <td>${order.customerId}</td>
                             <td class="action-buttons">
                                 <c:if test="${order.status == 'PENDING'}">
-                                    <form action="orders/accept" method="post" style="display: inline;">
+                                    <form action="${pageContext.request.contextPath}/orders/accept" method="post" style="display: inline;">
                                         <input type="hidden" name="id" value="${order.id}">
                                         <button type="submit" class="btn btn-success btn-sm">Aceptar</button>
                                     </form>
-                                    <form action="orders/reject" method="post" style="display: inline;">
+                                    <form action="${pageContext.request.contextPath}/orders/reject" method="post" style="display: inline;">
                                         <input type="hidden" name="id" value="${order.id}">
                                         <button type="submit" class="btn btn-danger btn-sm">Rechazar</button>
                                     </form>
@@ -91,7 +90,7 @@
                                     <a href="#" class="btn btn-warning btn-sm edit-order" data-id="${order.id}" data-status="${order.status}">Cambiar Estado</a>
                                 </c:if>
                                 <c:if test="${hasBeenProcessed[order.id]}">
-                                    <a href="orders/audit?orderId=${order.id}&customId=${order.customId}" class="btn btn-info btn-sm">Ver Historial</a>
+                                    <a href="${pageContext.request.contextPath}/orders/audit?orderId=${order.id}&customId=${order.customId}" class="btn btn-info btn-sm">Ver Historial</a>
                                 </c:if>
                             </td>
                         </tr>
@@ -103,13 +102,13 @@
             <nav aria-label="Paginación de órdenes">
                 <ul class="pagination justify-content-center">
                     <li class="page-item <%= currentPage == 1 ? "disabled" : "" %>">
-                        <a class="page-link" href="orders?page=<%= currentPage - 1 %>">Anterior</a>
+                        <a class="page-link" href="${pageContext.request.contextPath}/orders?page=<%= currentPage - 1 %>">Anterior</a>
                     </li>
                     <li class="page-item disabled">
                         <span class="page-link">Página <%= currentPage %> de <%= totalPages %></span>
                     </li>
                     <li class="page-item <%= currentPage == totalPages ? "disabled" : "" %>">
-                        <a class="page-link" href="orders?page=<%= currentPage + 1 %>">Siguiente</a>
+                        <a class="page-link" href="${pageContext.request.contextPath}/orders?page=<%= currentPage + 1 %>">Siguiente</a>
                     </li>
                 </ul>
             </nav>
@@ -124,12 +123,12 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form action="orders/update" method="post" id="editOrderForm">
+                        <form action="${pageContext.request.contextPath}/orders/update" method="post" id="editOrderForm">
                             <input type="hidden" id="editId" name="id">
                             <div class="mb-3">
                                 <label for="editStatus" class="form-label">Estado</label>
                                 <select class="form-control" id="editStatus" name="status" required>
-                                    <option value="PENDING">Pendiente</option>
+                                    <option value="PROCESSING">Procesando</option>
                                     <option value="COMPLETED">Completada</option>
                                     <option value="CANCELLED">Cancelada</option>
                                 </select>
