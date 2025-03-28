@@ -18,8 +18,8 @@ public class AuthenticationFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         HttpSession session = httpRequest.getSession(false);
 
-        // Verificar si el usuario está autenticado
-        boolean isLoggedIn = (session != null && session.getAttribute("user") != null);
+        // Verificar si el usuario está autenticado (si hay un token en la sesión)
+        boolean isLoggedIn = (session != null && session.getAttribute("token") != null);
         String requestURI = httpRequest.getRequestURI();
 
         // Si el usuario no está autenticado y está intentando acceder a una página protegida

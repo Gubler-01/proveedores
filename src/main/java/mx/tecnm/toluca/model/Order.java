@@ -96,11 +96,7 @@ public class Order {
     // Método para calcular subtotal y total
     public void calculateTotals() {
         this.subtotal = items.stream()
-                .mapToDouble(item -> {
-                    // Asegurarse de que unitPrice no sea null o 0
-                    double price = item.getUnitPrice() != null ? item.getUnitPrice() : 0.0;
-                    return price * item.getQuantity();
-                })
+                .mapToDouble(OrderItem::getSubtotal)
                 .sum();
         this.total = this.subtotal; // Por ahora, total = subtotal; puedes agregar impuestos o descuentos aquí
     }

@@ -5,7 +5,7 @@ import mx.tecnm.toluca.repository.ProductRepository;
 
 import java.io.InputStream;
 import java.util.List;
-/*
+
 public class ProductService {
     private final ProductRepository productRepository;
 
@@ -53,4 +53,3 @@ public class ProductService {
         return productRepository.getImage(imageId);
     }
 }
-*/

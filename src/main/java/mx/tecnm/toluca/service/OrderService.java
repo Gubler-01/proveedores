@@ -7,7 +7,7 @@ import mx.tecnm.toluca.model.Product;
 import mx.tecnm.toluca.repository.OrderRepository;
 
 import java.util.List;
-/*
+
 public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductService productService;
@@ -148,5 +148,4 @@ public class OrderService {
     public List<OrderAudit> getAuditByOrderId(String orderId) {
         return orderRepository.findAuditByOrderId(orderId);
     }
-} 
-*/
+}

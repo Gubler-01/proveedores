@@ -1,5 +1,5 @@
 package mx.tecnm.toluca.controller;
-/*
+
 import com.google.gson.*;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -64,4 +64,3 @@ public class ProductApiController extends HttpServlet {
         out.flush();
     }
 }
-*/

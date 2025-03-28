@@ -6,7 +6,7 @@ public class Product {
     private String description;
     private double price;
     private int stock;
-    private String imageUrl; // Cambiado de imageId a imageUrl para almacenar la URL del file server
+    private String imageUrl; // Campo para almacenar la URL de la imagen en el file server
 
     // Constructor vacío
     public Product() {

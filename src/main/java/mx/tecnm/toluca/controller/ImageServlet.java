@@ -1,5 +1,5 @@
 package mx.tecnm.toluca.controller;
-/*
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,4 +36,3 @@ public class ImageServlet extends HttpServlet {
         response.getOutputStream().write(imageData);
     }
 }
-*/
