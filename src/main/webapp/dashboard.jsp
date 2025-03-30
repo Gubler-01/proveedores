@@ -37,6 +37,8 @@
                         <th>Descripción</th>
                         <th>Precio</th>
                         <th>Stock</th>
+                        <th>Categoría</th>
+                        <th>Status</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -44,13 +46,26 @@
                     <c:forEach var="product" items="${products}">
                         <tr>
                             <td>${product.id}</td>
-                            <td>${product.name}</td>
-                            <td>${product.description}</td>
-                            <td>$<fmt:formatNumber value="${product.price}" pattern="#,##0.00"/></td>
+                            <td>${product.nombre}</td>
+                            <td>${product.descripcion}</td>
+                            <td>$<fmt:formatNumber value="${product.precio}" pattern="#,##0.00"/></td>
                             <td>${product.stock}</td>
+                            <td>${product.categoria}</td>
+                            <td>${product.status}</td>
                             <td>
-                                <button class="btn btn-warning btn-sm edit-product" data-id="${product.id}" data-name="${product.name}" data-description="${product.description}" data-price="${product.price}" data-stock="${product.stock}" data-bs-toggle="modal" data-bs-target="#editModal">Editar</button>
-                                <button class="btn btn-danger btn-sm delete-product" data-id="${product.id}" data-bs-toggle="modal" data-bs-target="#deleteModal">Eliminar</button>
+                                <button class="btn btn-warning btn-sm edit-product" 
+                                        data-id="${product.id}" 
+                                        data-nombre="${product.nombre}" 
+                                        data-descripcion="${product.descripcion}" 
+                                        data-precio="${product.precio}" 
+                                        data-stock="${product.stock}" 
+                                        data-status="${product.status}" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editModal">Editar</button>
+                                <button class="btn btn-danger btn-sm delete-product" 
+                                        data-id="${product.id}" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal">Eliminar</button>
                             </td>
                         </tr>
                     </c:forEach>
@@ -74,20 +89,28 @@
                         <form action="dashboard" method="post" id="addProductForm">
                             <input type="hidden" name="action" value="add">
                             <div class="mb-3">
-                                <label for="addName" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="addName" name="name" required>
+                                <label for="addNombre" class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="addNombre" name="nombre" required>
                             </div>
                             <div class="mb-3">
-                                <label for="addDescription" class="form-label">Descripción</label>
-                                <input type="text" class="form-control" id="addDescription" name="description" required>
+                                <label for="addDescripcion" class="form-label">Descripción</label>
+                                <input type="text" class="form-control" id="addDescripcion" name="descripcion" required>
                             </div>
                             <div class="mb-3">
-                                <label for="addPrice" class="form-label">Precio</label>
-                                <input type="number" class="form-control" id="addPrice" name="price" step="0.01" required>
+                                <label for="addPrecio" class="form-label">Precio</label>
+                                <input type="number" class="form-control" id="addPrecio" name="precio" step="0.01" required>
                             </div>
                             <div class="mb-3">
                                 <label for="addStock" class="form-label">Stock</label>
                                 <input type="number" class="form-control" id="addStock" name="stock" required>
+                            </div>
+                            <input type="hidden" name="categoria" value="Blancos">
+                            <div class="mb-3">
+                                <label for="addStatus" class="form-label">Status</label>
+                                <select class="form-control" id="addStatus" name="status" required>
+                                    <option value="Disponible">Disponible</option>
+                                    <option value="No disponible">No disponible</option>
+                                </select>
                             </div>
                             <button type="submit" class="btn btn-primary">Guardar</button>
                         </form>
@@ -109,20 +132,28 @@
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" id="editId" name="id">
                             <div class="mb-3">
-                                <label for="editName" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="editName" name="name" required>
+                                <label for="editNombre" class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="editNombre" name="nombre" required>
                             </div>
                             <div class="mb-3">
-                                <label for="editDescription" class="form-label">Descripción</label>
-                                <input type="text" class="form-control" id="editDescription" name="description" required>
+                                <label for="editDescripcion" class="form-label">Descripción</label>
+                                <input type="text" class="form-control" id="editDescripcion" name="descripcion" required>
                             </div>
                             <div class="mb-3">
-                                <label for="editPrice" class="form-label">Precio</label>
-                                <input type="number" class="form-control" id="editPrice" name="price" step="0.01" required>
+                                <label for="editPrecio" class="form-label">Precio</label>
+                                <input type="number" class="form-control" id="editPrecio" name="precio" step="0.01" required>
                             </div>
                             <div class="mb-3">
                                 <label for="editStock" class="form-label">Stock</label>
                                 <input type="number" class="form-control" id="editStock" name="stock" required>
+                            </div>
+                            <input type="hidden" name="categoria" value="Blancos">
+                            <div class="mb-3">
+                                <label for="editStatus" class="form-label">Status</label>
+                                <select class="form-control" id="editStatus" name="status" required>
+                                    <option value="Disponible">Disponible</option>
+                                    <option value="No disponible">No disponible</option>
+                                </select>
                             </div>
                             <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                         </form>
@@ -178,16 +209,18 @@
                 editButtons.forEach(button => {
                     button.addEventListener('click', function() {
                         const id = this.getAttribute('data-id');
-                        const name = this.getAttribute('data-name');
-                        const description = this.getAttribute('data-description');
-                        const price = this.getAttribute('data-price');
+                        const nombre = this.getAttribute('data-nombre');
+                        const descripcion = this.getAttribute('data-descripcion');
+                        const precio = this.getAttribute('data-precio');
                         const stock = this.getAttribute('data-stock');
+                        const status = this.getAttribute('data-status');
 
                         document.getElementById('editId').value = id;
-                        document.getElementById('editName').value = name;
-                        document.getElementById('editDescription').value = description;
-                        document.getElementById('editPrice').value = price;
+                        document.getElementById('editNombre').value = nombre;
+                        document.getElementById('editDescripcion').value = descripcion;
+                        document.getElementById('editPrecio').value = precio;
                         document.getElementById('editStock').value = stock;
+                        document.getElementById('editStatus').value = status;
                     });
                 });
 

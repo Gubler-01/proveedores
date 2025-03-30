@@ -18,7 +18,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ProductService {
-
     private static final Logger LOGGER = Logger.getLogger(ProductService.class.getName());
     private final String baseUrl = ConfiguracionApp.getProperty("app.base.url");
     private final String serviceEndpoint = ConfiguracionApp.getProperty("app.service.endpoint");
@@ -45,8 +44,7 @@ public class ProductService {
                 LOGGER.log(Level.INFO, "Número de productos obtenidos: {0}", products.size());
                 return products.isEmpty() ? Collections.emptyList() : products;
             } else {
-                LOGGER.log(Level.SEVERE, "Error al obtener productos. Código HTTP: {0}, Respuesta: {1}",
-                        new Object[]{response.getStatus(), responseBody});
+                LOGGER.log(Level.SEVERE, "Error al obtener productos: {0}", responseBody);
                 throw new RuntimeException("Error al obtener productos: " + responseBody);
             }
         } catch (Exception e) {
@@ -64,10 +62,12 @@ public class ProductService {
 
     public void addProduct(HttpServletRequest request, String token) {
         Product product = new Product();
-        product.setName(request.getParameter("name"));
-        product.setDescription(request.getParameter("description"));
-        product.setPrice(Double.parseDouble(request.getParameter("price")));
+        product.setNombre(request.getParameter("nombre"));
+        product.setDescripcion(request.getParameter("descripcion"));
+        product.setPrecio(Double.parseDouble(request.getParameter("precio")));
         product.setStock(Integer.parseInt(request.getParameter("stock")));
+        product.setCategoria("Blancos"); // Valor fijo para este proveedor
+        product.setStatus(request.getParameter("status")); // Obtenido del formulario
 
         List<Product> productList = Collections.singletonList(product);
 
@@ -107,10 +107,12 @@ public class ProductService {
     public void updateProduct(HttpServletRequest request, String token) {
         String id = request.getParameter("id");
         Product product = new Product();
-        product.setName(request.getParameter("name"));
-        product.setDescription(request.getParameter("description"));
-        product.setPrice(Double.parseDouble(request.getParameter("price")));
+        product.setNombre(request.getParameter("nombre"));
+        product.setDescripcion(request.getParameter("descripcion"));
+        product.setPrecio(Double.parseDouble(request.getParameter("precio")));
         product.setStock(Integer.parseInt(request.getParameter("stock")));
+        product.setCategoria("Blancos"); // Mantener fijo
+        product.setStatus(request.getParameter("status"));
 
         Client client = ClientBuilder.newClient();
         Jsonb jsonb = JsonbBuilder.create();
@@ -127,7 +129,6 @@ public class ProductService {
                 ResponseMessage responseMessage = jsonb.fromJson(responseBody, ResponseMessage.class);
                 if ("succes".equals(responseMessage.getStatus()) && responseMessage.getHttpCode() == 200) {
                     LOGGER.log(Level.INFO, "Producto actualizado correctamente: {0}", responseBody);
-                    return; // Éxito, no lanzamos excepción
                 } else {
                     LOGGER.log(Level.SEVERE, "Error en la respuesta de la API: {0}", responseBody);
                     throw new RuntimeException(responseMessage.getMessage());
@@ -167,33 +168,15 @@ public class ProductService {
     }
 
     public static class ResponseMessage {
-
         private int httpCode;
         private String message;
         private String status;
 
-        public int getHttpCode() {
-            return httpCode;
-        }
-
-        public void setHttpCode(int httpCode) {
-            this.httpCode = httpCode;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
+        public int getHttpCode() { return httpCode; }
+        public void setHttpCode(int httpCode) { this.httpCode = httpCode; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
     }
 }
