@@ -26,13 +26,19 @@ public class DashboardController extends HttpServlet {
         String token = (String) session.getAttribute("token");
         String correo = (String) session.getAttribute("correo");
 
+        LOGGER.log(Level.INFO, "Iniciando doGet del DashboardController. Token: {0}, Correo: {1}", 
+            new Object[]{token, correo});
+
         if (token == null || correo == null) {
+            LOGGER.log(Level.WARNING, "Token o correo no encontrados en la sesión. Redirigiendo a login.");
             response.sendRedirect(request.getContextPath() + "/login.jsp");
             return;
         }
 
         try {
+            LOGGER.log(Level.INFO, "Obteniendo lista de productos...");
             List<Product> products = productService.getAllProducts(token);
+            LOGGER.log(Level.INFO, "Productos obtenidos: {0}", products.size());
             request.setAttribute("products", products);
 
             Integer currentPage = request.getParameter("page") != null ? Integer.parseInt(request.getParameter("page")) : 1;
@@ -40,6 +46,7 @@ public class DashboardController extends HttpServlet {
             request.setAttribute("currentPage", currentPage);
             request.setAttribute("totalPages", totalPages);
 
+            LOGGER.log(Level.INFO, "Redirigiendo a dashboard.jsp");
             request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error al cargar productos", e);
@@ -68,7 +75,7 @@ public class DashboardController extends HttpServlet {
                     break;
                 case "update":
                     productService.updateProduct(request, token);
-                    session.setAttribute("message", "Producto actualizado exitosamente"); // Mensaje de éxito
+                    session.setAttribute("message", "Producto actualizado exitosamente");
                     break;
                 case "delete":
                     String id = request.getParameter("id");

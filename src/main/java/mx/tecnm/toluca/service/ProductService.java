@@ -18,6 +18,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ProductService {
+
     private static final Logger LOGGER = Logger.getLogger(ProductService.class.getName());
     private final String baseUrl = ConfiguracionApp.getProperty("app.base.url");
     private final String serviceEndpoint = ConfiguracionApp.getProperty("app.service.endpoint");
@@ -29,21 +30,23 @@ public class ProductService {
 
         try {
             String url = baseUrl + serviceEndpoint + "/" + collection;
+            LOGGER.log(Level.INFO, "Solicitando productos a la URL: {0}", url);
             Response response = client.target(url)
                     .request(MediaType.APPLICATION_JSON)
                     .header(ConfiguracionApp.getProperty("app.token.header"), "Bearer " + token)
                     .get();
 
             String responseBody = response.readEntity(String.class);
-            LOGGER.log(Level.INFO, "Respuesta de la API al obtener productos: {0}", responseBody);
+            LOGGER.log(Level.INFO, "Respuesta de la API: {0}", responseBody);
 
             if (response.getStatus() == 200) {
                 Product[] productsArray = jsonb.fromJson(responseBody, Product[].class);
                 List<Product> products = Arrays.asList(productsArray);
-                LOGGER.log(Level.INFO, "Productos obtenidos: {0}", products.size());
+                LOGGER.log(Level.INFO, "Número de productos obtenidos: {0}", products.size());
                 return products.isEmpty() ? Collections.emptyList() : products;
             } else {
-                LOGGER.log(Level.SEVERE, "Error al obtener productos: {0}", responseBody);
+                LOGGER.log(Level.SEVERE, "Error al obtener productos. Código HTTP: {0}, Respuesta: {1}",
+                        new Object[]{response.getStatus(), responseBody});
                 throw new RuntimeException("Error al obtener productos: " + responseBody);
             }
         } catch (Exception e) {
@@ -164,15 +167,33 @@ public class ProductService {
     }
 
     public static class ResponseMessage {
+
         private int httpCode;
         private String message;
         private String status;
 
-        public int getHttpCode() { return httpCode; }
-        public void setHttpCode(int httpCode) { this.httpCode = httpCode; }
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
+        public int getHttpCode() {
+            return httpCode;
+        }
+
+        public void setHttpCode(int httpCode) {
+            this.httpCode = httpCode;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
     }
 }

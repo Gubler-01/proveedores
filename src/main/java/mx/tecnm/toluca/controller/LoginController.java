@@ -44,7 +44,7 @@ public class LoginController extends HttpServlet {
             // Log de inicio de sesión exitoso
             LOGGER.log(Level.INFO, "Inicio de sesión exitoso para: {0}", correo);
 
-            response.sendRedirect(request.getContextPath() + "/dashboard.jsp");
+            response.sendRedirect(request.getContextPath() + "/dashboard");
         } catch (Exception e) {
             // Log de error
             LOGGER.log(Level.SEVERE, "Error en inicio de sesión", e);
