@@ -68,7 +68,7 @@ public class DashboardController extends HttpServlet {
                     break;
                 case "update":
                     productService.updateProduct(request, token);
-                    session.setAttribute("message", "Producto actualizado exitosamente");
+                    session.setAttribute("message", "Producto actualizado exitosamente"); // Mensaje de éxito
                     break;
                 case "delete":
                     String id = request.getParameter("id");
