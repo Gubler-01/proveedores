@@ -120,9 +120,22 @@ public class ProductService {
         Product product = new Product();
         product.setNombre(new String(request.getPart("nombre").getInputStream().readAllBytes()));
         product.setDescripcion(new String(request.getPart("descripcion").getInputStream().readAllBytes()));
-        product.setPrecio(Double.parseDouble(new String(request.getPart("precio").getInputStream().readAllBytes())));
-        product.setStock(Integer.parseInt(new String(request.getPart("stock").getInputStream().readAllBytes())));
-        product.setCategoria("Blancos"); // Este sigue fijo
+        double precio = Double.parseDouble(new String(request.getPart("precio").getInputStream().readAllBytes()));
+        int stock = Integer.parseInt(new String(request.getPart("stock").getInputStream().readAllBytes()));
+        
+        // Validaciones
+        if (precio < 0) {
+            LOGGER.log(Level.WARNING, "Intento de agregar producto con precio negativo: {0}", precio);
+            throw new IllegalArgumentException("El precio no puede ser negativo.");
+        }
+        if (stock < 0) {
+            LOGGER.log(Level.WARNING, "Intento de agregar producto con stock negativo: {0}", stock);
+            throw new IllegalArgumentException("El stock no puede ser negativo.");
+        }
+
+        product.setPrecio(precio);
+        product.setStock(stock);
+        product.setCategoria("Blancos");
         product.setStatus(new String(request.getPart("status").getInputStream().readAllBytes()));
 
         Part filePart = request.getPart("imagen");
@@ -173,8 +186,21 @@ public class ProductService {
         Product product = new Product();
         product.setNombre(new String(request.getPart("nombre").getInputStream().readAllBytes()));
         product.setDescripcion(new String(request.getPart("descripcion").getInputStream().readAllBytes()));
-        product.setPrecio(Double.parseDouble(new String(request.getPart("precio").getInputStream().readAllBytes())));
-        product.setStock(Integer.parseInt(new String(request.getPart("stock").getInputStream().readAllBytes())));
+        double precio = Double.parseDouble(new String(request.getPart("precio").getInputStream().readAllBytes()));
+        int stock = Integer.parseInt(new String(request.getPart("stock").getInputStream().readAllBytes()));
+        
+        // Validaciones
+        if (precio < 0) {
+            LOGGER.log(Level.WARNING, "Intento de actualizar producto con precio negativo: {0}", precio);
+            throw new IllegalArgumentException("El precio no puede ser negativo.");
+        }
+        if (stock < 0) {
+            LOGGER.log(Level.WARNING, "Intento de actualizar producto con stock negativo: {0}", stock);
+            throw new IllegalArgumentException("El stock no puede ser negativo.");
+        }
+
+        product.setPrecio(precio);
+        product.setStock(stock);
         product.setCategoria("Blancos");
         product.setStatus(new String(request.getPart("status").getInputStream().readAllBytes()));
 
@@ -183,7 +209,8 @@ public class ProductService {
         if (imageUrl != null) {
             product.setImagen(imageUrl);
         } else {
-            product.setImagen(new String(request.getPart("existingImagen").getInputStream().readAllBytes()));
+            String existingImagen = new String(request.getPart("existingImagen").getInputStream().readAllBytes());
+            product.setImagen(existingImagen.isEmpty() ? null : existingImagen);
         }
 
         Client client = ClientBuilder.newClient();

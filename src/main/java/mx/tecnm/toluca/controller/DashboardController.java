@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 @WebServlet("/dashboard")
 @MultipartConfig // Añadimos esta anotación para habilitar el manejo de multipart
 public class DashboardController extends HttpServlet {
+
     private static final Logger LOGGER = Logger.getLogger(DashboardController.class.getName());
     private ProductService productService = new ProductService();
 
@@ -28,8 +29,8 @@ public class DashboardController extends HttpServlet {
         String token = (String) session.getAttribute("token");
         String correo = (String) session.getAttribute("correo");
 
-        LOGGER.log(Level.INFO, "Iniciando doGet del DashboardController. Token: {0}, Correo: {1}", 
-            new Object[]{token, correo});
+        LOGGER.log(Level.INFO, "Iniciando doGet del DashboardController. Token: {0}, Correo: {1}",
+                new Object[]{token, correo});
 
         if (token == null || correo == null) {
             LOGGER.log(Level.WARNING, "Token o correo no encontrados en la sesión. Redirigiendo a login.");
@@ -69,8 +70,8 @@ public class DashboardController extends HttpServlet {
         }
 
         try {
-            String action = request.getPart("action").getSubmittedFileName() == null ? 
-                new String(request.getPart("action").getInputStream().readAllBytes()) : null;
+            String action = request.getPart("action").getSubmittedFileName() == null
+                    ? new String(request.getPart("action").getInputStream().readAllBytes()) : null;
             LOGGER.log(Level.INFO, "Acción recibida: {0}", action);
 
             switch (action != null ? action : "") {
@@ -91,6 +92,9 @@ public class DashboardController extends HttpServlet {
                     LOGGER.log(Level.WARNING, "Acción no válida recibida: {0}", action);
                     session.setAttribute("error", "Acción no válida");
             }
+        } catch (IllegalArgumentException e) {
+            LOGGER.log(Level.SEVERE, "Error de validación: {0}", e.getMessage());
+            session.setAttribute("error", e.getMessage()); // Mostrar mensaje específico al usuario
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error en la acción del POST", e);
             session.setAttribute("error", "Error: " + e.getMessage());
