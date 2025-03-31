@@ -22,7 +22,10 @@ public class Product {
     private String categoria;
 
     @JsonbProperty("status")
-    private String status; // Podría ser boolean si la API lo prefiere, pero usaremos String por ahora
+    private String status;
+
+    @JsonbProperty("imagen")
+    private String imagen; // URL de la imagen
 
     // Getters y Setters
     public String getId() { return id; }
@@ -39,4 +42,6 @@ public class Product {
     public void setCategoria(String categoria) { this.categoria = categoria; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getImagen() { return imagen; }
+    public void setImagen(String imagen) { this.imagen = imagen; }
 }

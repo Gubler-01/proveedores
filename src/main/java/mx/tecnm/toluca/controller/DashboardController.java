@@ -1,6 +1,7 @@
 package mx.tecnm.toluca.controller;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @WebServlet("/dashboard")
+@MultipartConfig // Añadimos esta anotación para habilitar el manejo de multipart
 public class DashboardController extends HttpServlet {
     private static final Logger LOGGER = Logger.getLogger(DashboardController.class.getName());
     private ProductService productService = new ProductService();
@@ -42,7 +44,7 @@ public class DashboardController extends HttpServlet {
             request.setAttribute("products", products);
 
             Integer currentPage = request.getParameter("page") != null ? Integer.parseInt(request.getParameter("page")) : 1;
-            Integer totalPages = 1; // Ajustar si la API soporta paginación
+            Integer totalPages = 1;
             request.setAttribute("currentPage", currentPage);
             request.setAttribute("totalPages", totalPages);
 
@@ -66,8 +68,11 @@ public class DashboardController extends HttpServlet {
             return;
         }
 
-        String action = request.getParameter("action");
         try {
+            String action = request.getPart("action").getSubmittedFileName() == null ? 
+                new String(request.getPart("action").getInputStream().readAllBytes()) : null;
+            LOGGER.log(Level.INFO, "Acción recibida: {0}", action);
+
             switch (action != null ? action : "") {
                 case "add":
                     productService.addProduct(request, token);
@@ -78,15 +83,16 @@ public class DashboardController extends HttpServlet {
                     session.setAttribute("message", "Producto actualizado exitosamente");
                     break;
                 case "delete":
-                    String id = request.getParameter("id");
+                    String id = new String(request.getPart("id").getInputStream().readAllBytes());
                     productService.deleteProduct(id, token);
                     session.setAttribute("message", "Producto eliminado exitosamente");
                     break;
                 default:
+                    LOGGER.log(Level.WARNING, "Acción no válida recibida: {0}", action);
                     session.setAttribute("error", "Acción no válida");
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error en la acción: " + action, e);
+            LOGGER.log(Level.SEVERE, "Error en la acción del POST", e);
             session.setAttribute("error", "Error: " + e.getMessage());
         }
         response.sendRedirect(request.getContextPath() + "/dashboard");

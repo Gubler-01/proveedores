@@ -39,6 +39,7 @@
                         <th>Stock</th>
                         <th>Categoría</th>
                         <th>Status</th>
+                        <th>Imagen</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -53,6 +54,11 @@
                             <td>${product.categoria}</td>
                             <td>${product.status}</td>
                             <td>
+                                <c:if test="${not empty product.imagen}">
+                                    <img src="${product.imagen}" alt="Imagen del producto" style="max-width: 100px;"/>
+                                </c:if>
+                            </td>
+                            <td>
                                 <button class="btn btn-warning btn-sm edit-product" 
                                         data-id="${product.id}" 
                                         data-nombre="${product.nombre}" 
@@ -60,6 +66,7 @@
                                         data-precio="${product.precio}" 
                                         data-stock="${product.stock}" 
                                         data-status="${product.status}" 
+                                        data-imagen="${product.imagen}" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#editModal">Editar</button>
                                 <button class="btn btn-danger btn-sm delete-product" 
@@ -86,7 +93,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form action="dashboard" method="post" id="addProductForm">
+                        <form action="dashboard" method="post" enctype="multipart/form-data" id="addProductForm">
                             <input type="hidden" name="action" value="add">
                             <div class="mb-3">
                                 <label for="addNombre" class="form-label">Nombre</label>
@@ -112,6 +119,10 @@
                                     <option value="No disponible">No disponible</option>
                                 </select>
                             </div>
+                            <div class="mb-3">
+                                <label for="addImagen" class="form-label">Imagen</label>
+                                <input type="file" class="form-control" id="addImagen" name="imagen" accept="image/*" required>
+                            </div>
                             <button type="submit" class="btn btn-primary">Guardar</button>
                         </form>
                     </div>
@@ -128,9 +139,10 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form action="dashboard" method="post" id="editProductForm">
+                        <form action="dashboard" method="post" enctype="multipart/form-data" id="editProductForm">
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" id="editId" name="id">
+                            <input type="hidden" id="editExistingImagen" name="existingImagen">
                             <div class="mb-3">
                                 <label for="editNombre" class="form-label">Nombre</label>
                                 <input type="text" class="form-control" id="editNombre" name="nombre" required>
@@ -154,6 +166,11 @@
                                     <option value="Disponible">Disponible</option>
                                     <option value="No disponible">No disponible</option>
                                 </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editImagen" class="form-label">Imagen</label>
+                                <input type="file" class="form-control" id="editImagen" name="imagen" accept="image/*">
+                                <small class="form-text text-muted">Dejar en blanco para mantener la imagen actual.</small>
                             </div>
                             <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                         </form>
@@ -214,6 +231,7 @@
                         const precio = this.getAttribute('data-precio');
                         const stock = this.getAttribute('data-stock');
                         const status = this.getAttribute('data-status');
+                        const imagen = this.getAttribute('data-imagen');
 
                         document.getElementById('editId').value = id;
                         document.getElementById('editNombre').value = nombre;
@@ -221,6 +239,7 @@
                         document.getElementById('editPrecio').value = precio;
                         document.getElementById('editStock').value = stock;
                         document.getElementById('editStatus').value = status;
+                        document.getElementById('editExistingImagen').value = imagen;
                     });
                 });
 
