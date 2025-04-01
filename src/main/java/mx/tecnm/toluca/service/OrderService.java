@@ -134,13 +134,15 @@ public class OrderService {
         Jsonb jsonb = JsonbBuilder.create();
 
         try {
-            // Crear un objeto Order con solo el campo status actualizado
+            // Intentar con un objeto parcial primero
             Order orderUpdate = new Order();
             orderUpdate.setStatus(newStatus);
 
-            // Enviar la actualización a DatabaseService
             String url = baseUrl + serviceEndpoint + "/" + collection + "/" + orderId;
             LOGGER.log(Level.INFO, "Actualizando estado de la orden en la URL: {0}", url);
+            String jsonOrder = jsonb.toJson(orderUpdate);
+            LOGGER.log(Level.INFO, "JSON enviado para actualización: {0}", jsonOrder);
+
             Response response = client.target(url)
                     .request(MediaType.APPLICATION_JSON)
                     .header(ConfiguracionApp.getProperty("app.token.header"), "Bearer " + token)
