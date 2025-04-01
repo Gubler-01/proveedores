@@ -10,6 +10,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jakartaee>10.0.0</jakartaee>
+        <jersey.version>3.1.8</jersey.version>
     </properties>
     
     <dependencies>
@@ -24,14 +25,22 @@
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-json-jackson</artifactId>
-            <version>3.1.3</version>
+            <version>${jersey.version}</version>
+        </dependency>
+        
+        <!-- Para manejar multipart -->
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-multipart</artifactId>
+            <version>4.0.0-M2</version>
+            <type>jar</type>
         </dependency>
     
         <!-- Cliente HTTP -->
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>3.1.3</version>
+            <version>${jersey.version}</version>
         </dependency>
     
         <!-- Validación de datos -->
@@ -41,10 +50,28 @@
             <version>3.0.2</version>
         </dependency>
         
+        <!-- JAX-RS API -->
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+    
+        <!-- Jersey (implementación de JAX-RS) -->
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-server</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-json-binding</artifactId>
-            <version>3.1.3</version>
+            <version>${jersey.version}</version>
         </dependency>
     </dependencies>
     

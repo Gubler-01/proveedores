@@ -34,24 +34,19 @@ public class AuthService {
             
             String responseBody = response.readEntity(String.class);
             
-            // Log de depuración
             LOGGER.log(Level.INFO, "Respuesta del servidor: {0}", responseBody);
             
             if (response.getStatus() == 200) {
-                // Parsear la respuesta JSON
                 RespuestaLogin respuesta = jsonb.fromJson(responseBody, RespuestaLogin.class);
                 return respuesta;
             } else {
-                // Log de error
                 LOGGER.log(Level.SEVERE, "Error de autenticación. Código: {0}, Mensaje: {1}", 
                     new Object[]{response.getStatus(), responseBody});
                 
                 throw new RuntimeException("Error de autenticación: " + responseBody);
             }
         } catch (Exception e) {
-            // Log de excepción
             LOGGER.log(Level.SEVERE, "Excepción en autenticación", e);
-            
             throw new RuntimeException("Error de conexión: " + e.getMessage(), e);
         } finally {
             client.close();
@@ -60,6 +55,21 @@ public class AuthService {
             } catch (Exception e) {
                 LOGGER.log(Level.WARNING, "Error cerrando Jsonb", e);
             }
+        }
+    }
+
+    public String getAutomaticToken() {
+        String correo = ConfiguracionApp.getProperty("app.api.auth.correo");
+        String password = ConfiguracionApp.getProperty("app.api.auth.password");
+        Credenciales credenciales = new Credenciales(correo, password);
+
+        try {
+            RespuestaLogin respuesta = obtenerToken(credenciales);
+            LOGGER.log(Level.INFO, "Token automático obtenido para {0}", correo);
+            return respuesta.getToken();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error al obtener token automático", e);
+            throw new RuntimeException("No se pudo obtener el token automático: " + e.getMessage());
         }
     }
 }

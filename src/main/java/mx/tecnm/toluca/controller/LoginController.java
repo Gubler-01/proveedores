@@ -41,16 +41,40 @@ public class LoginController extends HttpServlet {
             session.setAttribute("roles", respuestaLogin.getRoles());
             session.setAttribute("correo", respuestaLogin.getCorreo());
 
-            // Log de inicio de sesión exitoso
             LOGGER.log(Level.INFO, "Inicio de sesión exitoso para: {0}", correo);
-
-            response.sendRedirect(request.getContextPath() + "/dashboard.jsp");
+            response.sendRedirect(request.getContextPath() + "/dashboard");
         } catch (Exception e) {
-            // Log de error
             LOGGER.log(Level.SEVERE, "Error en inicio de sesión", e);
-            
-            request.setAttribute("errorMessage", "Error de inicio de sesión: " + e.getMessage());
+            String errorMessage;
+
+            // Personalizar el mensaje de error según la causa
+            String exceptionMessage = e.getMessage() != null ? e.getMessage() : "";
+            if (exceptionMessage.contains("ERR_NGROK_3200")) {
+                errorMessage = "El servidor está offline. Por favor, intenta de nuevo más tarde.";
+            } else if (exceptionMessage.contains("httpCode\":401")) {
+                if (exceptionMessage.contains("Intentos restantes")) {
+                    String remainingAttempts = extractRemainingAttempts(exceptionMessage);
+                    errorMessage = "Credenciales inválidas. Intentos restantes: " + remainingAttempts;
+                } else {
+                    errorMessage = "Credenciales inválidas.";
+                }
+            } else {
+                errorMessage = "Error al intentar iniciar sesión. Por favor, intenta de nuevo.";
+            }
+
+            request.setAttribute("errorMessage", errorMessage);
             request.getRequestDispatcher("/login.jsp").forward(request, response);
+        }
+    }
+
+    private String extractRemainingAttempts(String message) {
+        try {
+            int startIndex = message.indexOf("Intentos restantes: ") + "Intentos restantes: ".length();
+            int endIndex = message.indexOf(",", startIndex);
+            if (endIndex == -1) endIndex = message.length();
+            return message.substring(startIndex, endIndex).trim();
+        } catch (Exception e) {
+            return "desconocidos"; // Valor por defecto si no se puede extraer
         }
     }
 }

@@ -2,33 +2,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
-    <style>
-        .error { color: red; margin-bottom: 10px; }
-        .loading { display: none; }
-    </style>
+    <title>Supplier Module - Login </title>
+    <link rel="stylesheet" href="css/styles.css"> <!-- Asegúrate de que la ruta sea correcta -->
 </head>
 <body>
-    <h2>Iniciar Sesión</h2>
-    
-    <% 
-    String errorMessage = (String) request.getAttribute("errorMessage");
-    if (errorMessage != null) {
-    %>
-        <div class="error"><%= errorMessage %></div>
-    <% } %>
-    
-    <form action="login" method="post" id="loginForm">
-        <label for="correo">Correo:</label>
-        <input type="email" id="correo" name="correo" required><br>
+    <div class="login-container">
+        <h2>Supplier Module - Login</h2>
         
-        <label for="password">Contraseña:</label>
-        <input type="password" id="password" name="password" required><br>
+        <% 
+        String errorMessage = (String) request.getAttribute("errorMessage");
+        if (errorMessage != null) {
+        %>
+            <p class="error"><%= errorMessage %></p>
+        <% } %>
         
-        <div class="loading">Iniciando sesión...</div>
-        
-        <input type="submit" value="Iniciar Sesión" id="submitBtn">
-    </form>
+        <form action="login" method="post" id="loginForm">
+            <div>
+                <label for="correo">Correo:</label>
+                <input type="email" id="correo" name="correo" required placeholder=" ">
+            </div>
+            
+            <div>
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" name="password" required placeholder=" ">
+            </div>
+            
+            <div class="loading">Iniciando sesión...</div>
+            
+            <div>
+                <button type="submit" id="submitBtn">Iniciar Sesión</button>
+            </div>
+        </form>
+    </div>
 
     <script>
         document.getElementById('loginForm').addEventListener('submit', function() {
