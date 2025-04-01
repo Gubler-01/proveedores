@@ -1,15 +1,29 @@
 package mx.tecnm.toluca.model;
 
+import jakarta.json.bind.annotation.JsonbProperty;
 import java.util.List;
 
 public class Order {
-    private String id;           // Número de orden (generado automáticamente)
-    private String customerId;   // ID del cliente
-    private List<OrderItem> items; // Lista de ítems en la orden
-    private double subtotal;     // Subtotal (suma de precio * cantidad)
-    private double total;        // Total (podría incluir impuestos o descuentos, por ahora igual a subtotal)
-    private String status;       // Estado de la orden (por ejemplo, "Pendiente")
-    private String createdAt;    // Fecha de creación (opcional)
+    @JsonbProperty("_id")
+    private String id;           // Ahora mapeado a "_id" como en Product.java
+
+    @JsonbProperty("customerId")
+    private String customerId;
+
+    @JsonbProperty("items")
+    private List<OrderItem> items;
+
+    @JsonbProperty("subtotal")
+    private double subtotal;
+
+    @JsonbProperty("total")
+    private double total;
+
+    @JsonbProperty("status")
+    private String status;
+
+    @JsonbProperty("createdAt")
+    private String createdAt;
 
     // Constructores
     public Order() {}

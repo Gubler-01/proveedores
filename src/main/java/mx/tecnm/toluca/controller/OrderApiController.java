@@ -13,6 +13,7 @@ import mx.tecnm.toluca.service.OrderService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,6 +59,37 @@ public class OrderApiController extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.setContentType("application/json");
             String errorMessage = String.format("{\"error\": \"Error al procesar la orden: %s\"}", e.getMessage());
+            response.getWriter().write(errorMessage);
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        try {
+            // Obtener token automáticamente
+            String token = authService.getAutomaticToken();
+            LOGGER.log(Level.INFO, "Solicitando órdenes mediante API con token automático");
+
+            // Obtener todas las órdenes usando OrderService
+            List<Order> orders = orderService.getAllOrders(token);
+
+            // Convertir la lista de órdenes a JSON
+            Jsonb jsonb = JsonbBuilder.create();
+            String jsonResponse = jsonb.toJson(orders);
+            LOGGER.log(Level.INFO, "Órdenes obtenidas para API: {0}", orders.size());
+
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write(jsonResponse);
+
+            jsonb.close();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error al obtener órdenes para la API", e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("application/json");
+            String errorMessage = String.format("{\"error\": \"Error al obtener órdenes: %s\"}", e.getMessage());
             response.getWriter().write(errorMessage);
         }
     }

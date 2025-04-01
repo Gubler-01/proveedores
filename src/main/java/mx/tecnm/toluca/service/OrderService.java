@@ -17,7 +17,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,15 +28,15 @@ public class OrderService {
     private final ProductService productService = new ProductService();
 
     public Order createOrder(Order order, String token) {
-        // Código existente para createOrder (sin cambios)
         Client client = ClientBuilder.newClient();
         Jsonb jsonb = JsonbBuilder.create();
 
         try {
-            order.setId(UUID.randomUUID().toString());
+            // Configurar la orden sin generar un id manualmente
             order.setStatus("Pendiente");
             order.setCreatedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 
+            // Consultar productos para obtener precios y calcular totales
             List<Product> products = productService.getAllProducts(token);
             double subtotal = 0.0;
 
@@ -54,6 +53,7 @@ public class OrderService {
             order.setSubtotal(subtotal);
             order.setTotal(subtotal);
 
+            // Enviar la orden a la colección "ordenes1" como arreglo
             String url = baseUrl + serviceEndpoint + "/" + collection;
             LOGGER.log(Level.INFO, "Creando orden en la URL: {0}", url);
             String jsonOrder = jsonb.toJson(List.of(order));
@@ -71,6 +71,8 @@ public class OrderService {
                 ProductService.ResponseMessage responseMessage = jsonb.fromJson(responseBody, ProductService.ResponseMessage.class);
                 if ("success".equals(responseMessage.getStatus()) && responseMessage.getHttpCode() == 200) {
                     LOGGER.log(Level.INFO, "Orden creada correctamente: {0}", responseBody);
+                    // Devolvemos la orden enviada, ya que DatabaseService no devuelve el _id creado
+                    // MongoDB lo asigna automáticamente, pero no lo recuperamos aquí
                     return order;
                 } else {
                     LOGGER.log(Level.SEVERE, "Error en la respuesta de la API: {0}", responseBody);
