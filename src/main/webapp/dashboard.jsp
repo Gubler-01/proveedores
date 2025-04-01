@@ -24,7 +24,8 @@
         <div class="dashboard-header">
             <h2>Bienvenido, <%= correo %>!</h2>
             <div class="dashboard-buttons">
-                <a href="logout"><button class="btn btn-danger">Cerrar Sesión</button></a>
+                <a href="${pageContext.request.contextPath}/orders" class="btn btn-info me-2">Ver Órdenes</a>
+                <a href="${pageContext.request.contextPath}/logout" class="btn btn-danger">Cerrar Sesión</a>
             </div>
         </div>
         <div>

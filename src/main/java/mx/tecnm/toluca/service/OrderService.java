@@ -14,6 +14,8 @@ import mx.tecnm.toluca.util.ConfiguracionApp;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -27,16 +29,15 @@ public class OrderService {
     private final ProductService productService = new ProductService();
 
     public Order createOrder(Order order, String token) {
+        // Código existente para createOrder (sin cambios)
         Client client = ClientBuilder.newClient();
         Jsonb jsonb = JsonbBuilder.create();
 
         try {
-            // Generar número de orden único y otros campos
             order.setId(UUID.randomUUID().toString());
             order.setStatus("Pendiente");
             order.setCreatedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 
-            // Consultar productos para obtener precios y calcular totales
             List<Product> products = productService.getAllProducts(token);
             double subtotal = 0.0;
 
@@ -51,12 +52,11 @@ public class OrderService {
             }
 
             order.setSubtotal(subtotal);
-            order.setTotal(subtotal); // Total = subtotal por ahora
+            order.setTotal(subtotal);
 
-            // Enviar la orden a la colección "ordenes1" como arreglo
             String url = baseUrl + serviceEndpoint + "/" + collection;
             LOGGER.log(Level.INFO, "Creando orden en la URL: {0}", url);
-            String jsonOrder = jsonb.toJson(List.of(order)); // Enviar como [{...}]
+            String jsonOrder = jsonb.toJson(List.of(order));
             LOGGER.log(Level.INFO, "Orden enviada como JSON: {0}", jsonOrder);
 
             Response response = client.target(url)
@@ -71,7 +71,7 @@ public class OrderService {
                 ProductService.ResponseMessage responseMessage = jsonb.fromJson(responseBody, ProductService.ResponseMessage.class);
                 if ("success".equals(responseMessage.getStatus()) && responseMessage.getHttpCode() == 200) {
                     LOGGER.log(Level.INFO, "Orden creada correctamente: {0}", responseBody);
-                    return order; // Devolver la orden procesada
+                    return order;
                 } else {
                     LOGGER.log(Level.SEVERE, "Error en la respuesta de la API: {0}", responseBody);
                     throw new RuntimeException(responseMessage.getMessage());
@@ -84,6 +84,44 @@ public class OrderService {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Excepción al crear orden", e);
             throw new RuntimeException("Error al procesar la orden: " + e.getMessage());
+        } finally {
+            client.close();
+            try {
+                jsonb.close();
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Error cerrando Jsonb", e);
+            }
+        }
+    }
+
+    public List<Order> getAllOrders(String token) {
+        Client client = ClientBuilder.newClient();
+        Jsonb jsonb = JsonbBuilder.create();
+
+        try {
+            String url = baseUrl + serviceEndpoint + "/" + collection;
+            LOGGER.log(Level.INFO, "Solicitando órdenes a la URL: {0} con token: {1}", new Object[]{url, token});
+            Response response = client.target(url)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header(ConfiguracionApp.getProperty("app.token.header"), "Bearer " + token)
+                    .get();
+
+            String responseBody = response.readEntity(String.class);
+            LOGGER.log(Level.INFO, "Código HTTP: {0}, Respuesta de la API: {1}", new Object[]{response.getStatus(), responseBody});
+
+            if (response.getStatus() == 200) {
+                Order[] ordersArray = jsonb.fromJson(responseBody, Order[].class);
+                List<Order> orders = Arrays.asList(ordersArray);
+                LOGGER.log(Level.INFO, "Número de órdenes obtenidas: {0}", orders.size());
+                return orders.isEmpty() ? Collections.emptyList() : orders;
+            } else {
+                LOGGER.log(Level.SEVERE, "Error al obtener órdenes. Código HTTP: {0}, Respuesta: {1}", 
+                    new Object[]{response.getStatus(), responseBody});
+                throw new RuntimeException("Error al obtener órdenes: Código " + response.getStatus() + " - " + responseBody);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Excepción al obtener órdenes", e);
+            throw new RuntimeException("Error al conectar con la API: " + e.getMessage());
         } finally {
             client.close();
             try {

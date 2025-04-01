@@ -444,3 +444,8 @@ body {
     margin: 10px 0;
     display: none;
 }
+
+.dashboard-buttons .btn-info {
+    background-color: #17a2b8; /* Color por defecto de btn-info */
+    border-color: #17a2b8;
+}
