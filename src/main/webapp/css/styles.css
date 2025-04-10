@@ -1,11 +1,13 @@
 /* Estilos generales */
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f5f5f5;
+    background: url('login_wh.jpeg') no-repeat center center fixed;
+    background-size: cover;
     margin: 0;
     padding: 0;
     color: #333;
 }
+
 
 .container {
     max-width: 1200px;
@@ -21,11 +23,17 @@ body {
     max-width: 400px;
     margin: 100px auto;
     padding: 30px;
-    background-color: #fff;
+    background: rgba(255, 255, 255, 0.85); /* Transparencia */
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Más sombra */
     text-align: center;
 }
+
+.login-container button:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 
 .login-container h2 {
     color: #4a90e2;
