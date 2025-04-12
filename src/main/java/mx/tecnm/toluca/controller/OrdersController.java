@@ -45,7 +45,7 @@ public class OrdersController extends HttpServlet {
             request.getRequestDispatcher("/orders.jsp").forward(request, response);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error al cargar órdenes", e);
-            request.setAttribute("error", "Error al cargar órdenes: " + e.getMessage());
+            session.setAttribute("error", "Error al cargar órdenes: " + e.getMessage());
             request.getRequestDispatcher("/orders.jsp").forward(request, response);
         }
     }
@@ -64,19 +64,20 @@ public class OrdersController extends HttpServlet {
         }
 
         String action = request.getParameter("action");
-        if ("updateStatus".equals(action)) {
+        if ("editStatus".equals(action)) {
             String orderId = request.getParameter("orderId");
             String newStatus = request.getParameter("status");
 
             try {
-                LOGGER.log(Level.INFO, "Actualizando estado de la orden {0} a {1}", new Object[]{orderId, newStatus});
-                orderService.updateOrderStatus(orderId, newStatus, token);
-                LOGGER.log(Level.INFO, "Estado de la orden actualizado correctamente");
+                LOGGER.log(Level.INFO, "Actualizando orden {0} con nuevo estado {1}", new Object[]{orderId, newStatus});
+                orderService.updateOrder(orderId, newStatus, token);
+                LOGGER.log(Level.INFO, "Orden actualizada correctamente");
+                session.setAttribute("message", "La orden ha sido actualizada a " + newStatus + ".");
                 response.sendRedirect(request.getContextPath() + "/orders");
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Error al actualizar el estado de la orden", e);
-                request.setAttribute("error", "Error al actualizar el estado de la orden: " + e.getMessage());
-                doGet(request, response); // Volver a cargar la página con el error
+                LOGGER.log(Level.SEVERE, "Error al actualizar la orden", e);
+                session.setAttribute("error", "Error al actualizar la orden: " + e.getMessage());
+                response.sendRedirect(request.getContextPath() + "/orders");
             }
         } else {
             LOGGER.log(Level.WARNING, "Acción no reconocida: {0}", action);

@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Order {
     @JsonbProperty("_id")
-    private String id;           // Ahora mapeado a "_id" como en Product.java
+    private String id;
 
     @JsonbProperty("customerId")
     private String customerId;
@@ -24,6 +24,9 @@ public class Order {
 
     @JsonbProperty("createdAt")
     private String createdAt;
+
+    @JsonbProperty("paymentMethod")
+    private String paymentMethod; // New field
 
     // Constructores
     public Order() {}
@@ -48,4 +51,6 @@ public class Order {
     public void setStatus(String status) { this.status = status; }
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
 }

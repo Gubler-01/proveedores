@@ -21,6 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class OrderService {
+
     private static final Logger LOGGER = Logger.getLogger(OrderService.class.getName());
     private final String baseUrl = ConfiguracionApp.getProperty("app.base.url");
     private final String serviceEndpoint = ConfiguracionApp.getProperty("app.service.endpoint");
@@ -35,6 +36,11 @@ public class OrderService {
             order.setStatus("Pendiente");
             order.setCreatedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 
+            if (order.getPaymentMethod() == null || order.getPaymentMethod().trim().isEmpty()) {
+                LOGGER.log(Level.WARNING, "Intento de crear orden sin método de pago");
+                throw new IllegalArgumentException("El método de pago es obligatorio.");
+            }
+
             List<Product> products = productService.getAllProducts(token);
             double subtotal = 0.0;
 
@@ -43,7 +49,7 @@ public class OrderService {
                         .filter(p -> p.getId().equals(item.getProductId()))
                         .findFirst()
                         .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado: " + item.getProductId()));
-                
+
                 item.setPrice(product.getPrecio());
                 subtotal += product.getPrecio() * item.getQuantity();
             }
@@ -74,8 +80,8 @@ public class OrderService {
                     throw new RuntimeException(responseMessage.getMessage());
                 }
             } else {
-                LOGGER.log(Level.SEVERE, "Error al crear orden: Código HTTP: {0}, Respuesta: {1}", 
-                    new Object[]{response.getStatus(), responseBody});
+                LOGGER.log(Level.SEVERE, "Error al crear orden: Código HTTP: {0}, Respuesta: {1}",
+                        new Object[]{response.getStatus(), responseBody});
                 throw new RuntimeException("Error al crear orden: Código " + response.getStatus() + " - " + responseBody);
             }
         } catch (Exception e) {
@@ -111,9 +117,12 @@ public class OrderService {
                 List<Order> orders = Arrays.asList(ordersArray);
                 LOGGER.log(Level.INFO, "Número de órdenes obtenidas: {0}", orders.size());
                 return orders.isEmpty() ? Collections.emptyList() : orders;
+            } else if (response.getStatus() == 204) {
+                LOGGER.log(Level.INFO, "No se encontraron órdenes en la base de datos (204 No Content).");
+                return Collections.emptyList();
             } else {
-                LOGGER.log(Level.SEVERE, "Error al obtener órdenes. Código HTTP: {0}, Respuesta: {1}", 
-                    new Object[]{response.getStatus(), responseBody});
+                LOGGER.log(Level.SEVERE, "Error al obtener órdenes. Código HTTP: {0}, Respuesta: {1}",
+                        new Object[]{response.getStatus(), responseBody});
                 throw new RuntimeException("Error al obtener órdenes: Código " + response.getStatus() + " - " + responseBody);
             }
         } catch (Exception e) {
@@ -129,44 +138,61 @@ public class OrderService {
         }
     }
 
-    public void updateOrderStatus(String orderId, String newStatus, String token) {
+    public void updateOrder(String orderId, String newStatus, String token) {
         Client client = ClientBuilder.newClient();
         Jsonb jsonb = JsonbBuilder.create();
 
         try {
-            // Intentar con un objeto parcial primero
-            Order orderUpdate = new Order();
-            orderUpdate.setStatus(newStatus);
+            // Validate the new status
+            if (!newStatus.equals("Completado") && !newStatus.equals("Cancelado")) {
+                LOGGER.log(Level.WARNING, "Intento de actualizar estado de orden a un valor no permitido: {0}", newStatus);
+                throw new IllegalArgumentException("El estado solo puede ser 'Completado' o 'Cancelado'.");
+            }
+
+            // Fetch the existing order to get all its fields
+            List<Order> orders = getAllOrders(token);
+            Order existingOrder = orders.stream()
+                    .filter(order -> order.getId().equals(orderId))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + orderId));
+
+            // Update the status while keeping other fields intact
+            existingOrder.setStatus(newStatus);
+
+            // Ensure the _id field is included in the payload
+            if (existingOrder.getId() == null) {
+                existingOrder.setId(orderId);
+            }
 
             String url = baseUrl + serviceEndpoint + "/" + collection + "/" + orderId;
-            LOGGER.log(Level.INFO, "Actualizando estado de la orden en la URL: {0}", url);
-            String jsonOrder = jsonb.toJson(orderUpdate);
+            LOGGER.log(Level.INFO, "Actualizando orden en la URL: {0}", url);
+            String jsonOrder = jsonb.toJson(existingOrder);
             LOGGER.log(Level.INFO, "JSON enviado para actualización: {0}", jsonOrder);
 
             Response response = client.target(url)
                     .request(MediaType.APPLICATION_JSON)
                     .header(ConfiguracionApp.getProperty("app.token.header"), "Bearer " + token)
-                    .put(Entity.json(orderUpdate));
+                    .put(Entity.json(existingOrder));
 
             String responseBody = response.readEntity(String.class);
             LOGGER.log(Level.INFO, "Código HTTP: {0}, Respuesta de la API: {1}", new Object[]{response.getStatus(), responseBody});
 
             if (response.getStatus() == 200) {
                 ProductService.ResponseMessage responseMessage = jsonb.fromJson(responseBody, ProductService.ResponseMessage.class);
-                if ("succes".equals(responseMessage.getStatus()) && responseMessage.getHttpCode() == 200) {
-                    LOGGER.log(Level.INFO, "Estado de la orden actualizado correctamente: {0}", responseBody);
+                if ("success".equals(responseMessage.getStatus()) && responseMessage.getHttpCode() == 200) {
+                    LOGGER.log(Level.INFO, "Orden actualizada correctamente: {0}", responseBody);
                 } else {
                     LOGGER.log(Level.SEVERE, "Error en la respuesta de la API: {0}", responseBody);
                     throw new RuntimeException(responseMessage.getMessage());
                 }
             } else {
-                LOGGER.log(Level.SEVERE, "Error al actualizar el estado de la orden: Código HTTP: {0}, Respuesta: {1}", 
-                    new Object[]{response.getStatus(), responseBody});
-                throw new RuntimeException("Error al actualizar el estado de la orden: Código " + response.getStatus() + " - " + responseBody);
+                LOGGER.log(Level.SEVERE, "Error al actualizar la orden: Código HTTP: {0}, Respuesta: {1}",
+                        new Object[]{response.getStatus(), responseBody});
+                throw new RuntimeException("Error al actualizar la orden: Código " + response.getStatus() + " - " + responseBody);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Excepción al actualizar el estado de la orden", e);
-            throw new RuntimeException("Error al actualizar el estado de la orden: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Excepción al actualizar la orden", e);
+            throw new RuntimeException("Error al actualizar la orden: " + e.getMessage());
         } finally {
             client.close();
             try {
