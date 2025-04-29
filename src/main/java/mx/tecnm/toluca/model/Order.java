@@ -6,37 +6,16 @@ import java.util.List;
 public class Order {
     @JsonbProperty("_id")
     private String id;
-
-    @JsonbProperty("customerId")
     private String customerId;
-
-    @JsonbProperty("items")
     private List<OrderItem> items;
-
-    @JsonbProperty("subtotal")
     private double subtotal;
-
-    @JsonbProperty("total")
     private double total;
-
-    @JsonbProperty("status")
     private String status;
-
-    @JsonbProperty("createdAt")
     private String createdAt;
+    private String paymentMethod;
+    private String itemsJson;
 
-    @JsonbProperty("paymentMethod")
-    private String paymentMethod; // New field
-
-    // Constructores
-    public Order() {}
-    
-    public Order(String customerId, List<OrderItem> items) {
-        this.customerId = customerId;
-        this.items = items;
-    }
-
-    // Getters y Setters
+    // Getters y setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getCustomerId() { return customerId; }
@@ -53,4 +32,6 @@ public class Order {
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public String getItemsJson() { return itemsJson; }
+    public void setItemsJson(String itemsJson) { this.itemsJson = itemsJson; }
 }
