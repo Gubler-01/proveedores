@@ -63,17 +63,19 @@
                             <td>${fn:escapeXml(order.createdAt)}</td>
                             <td>${fn:escapeXml(order.paymentMethod)}</td>
                             <td>
-                                <button class="btn btn-warning btn-sm update-order"
-                                        data-id="${fn:escapeXml(order.id)}"
-                                        data-customer-id="${fn:escapeXml(order.customerId)}"
-                                        data-items="${fn:escapeXml(order.itemsJson)}"
-                                        data-subtotal="${order.subtotal}"
-                                        data-total="${order.total}"
-                                        data-status="${fn:escapeXml(order.status)}"
-                                        data-created-at="${fn:escapeXml(order.createdAt)}"
-                                        data-payment-method="${fn:escapeXml(order.paymentMethod)}"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#updateModal">Actualizar Estado</button>
+                                <c:if test="${order.editable}">
+                                    <button class="btn btn-warning btn-sm update-order"
+                                            data-id="${fn:escapeXml(order.id)}"
+                                            data-customer-id="${fn:escapeXml(order.customerId)}"
+                                            data-items="${fn:escapeXml(order.itemsJson)}"
+                                            data-subtotal="${order.subtotal}"
+                                            data-total="${order.total}"
+                                            data-status="${fn:escapeXml(order.status)}"
+                                            data-created-at="${fn:escapeXml(order.createdAt)}"
+                                            data-payment-method="${fn:escapeXml(order.paymentMethod)}"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#updateModal">Actualizar Estado</button>
+                                </c:if>
                             </td>
                         </tr>
                     </c:forEach>
@@ -191,9 +193,17 @@
                         e.preventDefault();
                         alert('Estado inválido.');
                     }
+                    // Deshabilitar el botón correspondiente después de enviar el formulario
+                    const button = document.querySelector(`.update-order[data-id="${id}"]`);
+                    if (button) {
+                        button.disabled = true;
+                        button.classList.remove('btn-warning');
+                        button.classList.add('btn-secondary');
+                        button.textContent = 'Actualizado';
+                    }
                 });
             });
-</script>
+        </script>
     </div>
 </body>
 </html>

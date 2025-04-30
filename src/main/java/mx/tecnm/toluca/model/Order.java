@@ -14,6 +14,7 @@ public class Order {
     private String createdAt;
     private String paymentMethod;
     private String itemsJson;
+    private boolean editable = true; // Nuevo campo
 
     // Getters y setters
     public String getId() { return id; }
@@ -34,4 +35,6 @@ public class Order {
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
     public String getItemsJson() { return itemsJson; }
     public void setItemsJson(String itemsJson) { this.itemsJson = itemsJson; }
+    public boolean isEditable() { return editable; }
+    public void setEditable(boolean editable) { this.editable = editable; }
 }

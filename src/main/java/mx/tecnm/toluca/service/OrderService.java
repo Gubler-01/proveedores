@@ -80,8 +80,7 @@ public class OrderService {
                     throw new RuntimeException(responseMessage.getMessage());
                 }
             } else {
-                LOGGER.log(Level.SEVERE, "Error al crear orden: Código HTTP: {0}, Respuesta: {1}",
-                        new Object[]{response.getStatus(), responseBody});
+                LOGGER.log(Level.SEVERE, "Error al crear orden: Código HTTP: {0}, Respuesta: {1}", new Object[]{response.getStatus(), responseBody});
                 throw new RuntimeException("Error al crear orden: Código " + response.getStatus() + " - " + responseBody);
             }
         } catch (Exception e) {
@@ -162,12 +161,13 @@ public class OrderService {
                 OrderItem[] itemsArray = jsonb.fromJson(itemsJson, OrderItem[].class);
                 items = Arrays.asList(itemsArray);
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Error al deserializar items JSON: {0}" + itemsJson, e);
+                LOGGER.log(Level.SEVERE, "Error al deserializar items JSON: " + itemsJson, e);
                 throw new IllegalArgumentException("Error al deserializar los ítems: " + e.getMessage());
             }
             order.setItems(items);
 
             order.setStatus(status);
+            order.setEditable(false); // Marcar la orden como no editable después de la actualización
 
             // Validaciones
             if (id.isEmpty()) {
@@ -188,20 +188,20 @@ public class OrderService {
                     throw new IllegalArgumentException("El ID del producto es obligatorio.");
                 }
                 if (item.getQuantity() <= 0) {
-                    LOGGER.log(Level.WARNING, "Ítem con cantidad inválida: {0}", item.getQuantity());
+                    LOGGER.log(Level.WARNING, "Ítem con cantidad inválida: {0}", String.valueOf(item.getQuantity()));
                     throw new IllegalArgumentException("La cantidad debe ser mayor que cero.");
                 }
                 if (item.getPrice() < 0) {
-                    LOGGER.log(Level.WARNING, "Ítem con precio inválido: {0}", item.getPrice());
+                    LOGGER.log(Level.WARNING, "Ítem con precio inválido: {0}", String.valueOf(item.getPrice()));
                     throw new IllegalArgumentException("El precio no puede ser negativo.");
                 }
             }
             if (order.getSubtotal() < 0) {
-                LOGGER.log(Level.WARNING, "Intento de actualizar orden con subtotal negativo: {0}", order.getSubtotal());
+                LOGGER.log(Level.WARNING, "Intento de actualizar orden con subtotal negativo: {0}", String.valueOf(order.getSubtotal()));
                 throw new IllegalArgumentException("El subtotal no puede ser negativo.");
             }
             if (order.getTotal() < 0) {
-                LOGGER.log(Level.WARNING, "Intento de actualizar orden con total negativo: {0}", order.getTotal());
+                LOGGER.log(Level.WARNING, "Intento de actualizar orden con total negativo: {0}", String.valueOf(order.getTotal()));
                 throw new IllegalArgumentException("El total no puede ser negativo.");
             }
             if (!List.of("Pendiente", "Enviado", "Completado", "Cancelado").contains(status)) {
@@ -231,8 +231,7 @@ public class OrderService {
                     .put(Entity.json(order));
 
             String responseBody = response.readEntity(String.class);
-            LOGGER.log(Level.INFO, "Código HTTP: {0}, Respuesta de la API: {1}",
-                    new Object[]{response.getStatus(), responseBody});
+            LOGGER.log(Level.INFO, "Código HTTP: {0}, Respuesta de la API: {1}", new Object[]{response.getStatus(), responseBody});
 
             if (response.getStatus() == 200) {
                 ProductService.ResponseMessage responseMessage = jsonb.fromJson(
@@ -244,8 +243,7 @@ public class OrderService {
                     throw new RuntimeException("Error al actualizar la orden: " + responseMessage.getMessage());
                 }
             } else {
-                LOGGER.log(Level.SEVERE, "Error al actualizar orden: Código HTTP: {0}, Respuesta: {1}",
-                        new Object[]{response.getStatus(), responseBody});
+                LOGGER.log(Level.SEVERE, "Error al actualizar orden: Código HTTP: {0}, Respuesta: {1}", new Object[]{response.getStatus(), responseBody});
                 throw new RuntimeException("Error al actualizar orden: Código " + response.getStatus() + " - " + responseBody);
             }
         } catch (Exception e) {
