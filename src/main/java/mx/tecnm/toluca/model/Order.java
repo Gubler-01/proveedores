@@ -5,35 +5,18 @@ import java.util.List;
 
 public class Order {
     @JsonbProperty("_id")
-    private String id;           // Ahora mapeado a "_id" como en Product.java
-
-    @JsonbProperty("customerId")
+    private String id;
     private String customerId;
-
-    @JsonbProperty("items")
     private List<OrderItem> items;
-
-    @JsonbProperty("subtotal")
     private double subtotal;
-
-    @JsonbProperty("total")
     private double total;
-
-    @JsonbProperty("status")
     private String status;
-
-    @JsonbProperty("createdAt")
     private String createdAt;
+    private String paymentMethod;
+    private String itemsJson;
+    private boolean editable = true; // Nuevo campo
 
-    // Constructores
-    public Order() {}
-    
-    public Order(String customerId, List<OrderItem> items) {
-        this.customerId = customerId;
-        this.items = items;
-    }
-
-    // Getters y Setters
+    // Getters y setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getCustomerId() { return customerId; }
@@ -48,4 +31,10 @@ public class Order {
     public void setStatus(String status) { this.status = status; }
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public String getItemsJson() { return itemsJson; }
+    public void setItemsJson(String itemsJson) { this.itemsJson = itemsJson; }
+    public boolean isEditable() { return editable; }
+    public void setEditable(boolean editable) { this.editable = editable; }
 }

@@ -3,11 +3,12 @@
 <html>
 <head>
     <title>Supplier Module - Login </title>
-    <link rel="stylesheet" href="css/styles.css"> <!-- Asegúrate de que la ruta sea correcta -->
+    <link rel="stylesheet" href="css/styles.css"> 
 </head>
 <body>
     <div class="login-container">
-        <h2>Supplier Module - Login</h2>
+        <h2>Proveedor 1 - Blancos</h2>
+        <h2>Login</h2>
         
         <% 
         String errorMessage = (String) request.getAttribute("errorMessage");

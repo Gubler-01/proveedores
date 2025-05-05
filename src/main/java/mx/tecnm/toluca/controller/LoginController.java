@@ -59,7 +59,7 @@ public class LoginController extends HttpServlet {
                     errorMessage = "Credenciales inválidas.";
                 }
             } else {
-                errorMessage = "Error al intentar iniciar sesión. Por favor, intenta de nuevo.";
+                errorMessage = "El servidor está offline. Por favor, intenta de nuevo más tarde.";
             }
 
             request.setAttribute("errorMessage", errorMessage);

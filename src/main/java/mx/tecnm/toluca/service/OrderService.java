@@ -2,6 +2,8 @@ package mx.tecnm.toluca.service;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
@@ -12,6 +14,7 @@ import mx.tecnm.toluca.model.OrderItem;
 import mx.tecnm.toluca.model.Product;
 import mx.tecnm.toluca.util.ConfiguracionApp;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -21,6 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class OrderService {
+
     private static final Logger LOGGER = Logger.getLogger(OrderService.class.getName());
     private final String baseUrl = ConfiguracionApp.getProperty("app.base.url");
     private final String serviceEndpoint = ConfiguracionApp.getProperty("app.service.endpoint");
@@ -28,12 +32,14 @@ public class OrderService {
     private final ProductService productService = new ProductService();
 
     public Order createOrder(Order order, String token) {
-        Client client = ClientBuilder.newClient();
-        Jsonb jsonb = JsonbBuilder.create();
-
-        try {
+        try (Client client = ClientBuilder.newClient(); Jsonb jsonb = JsonbBuilder.create()) {
             order.setStatus("Pendiente");
             order.setCreatedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+            if (order.getPaymentMethod() == null || order.getPaymentMethod().trim().isEmpty()) {
+                LOGGER.log(Level.WARNING, "Intento de crear orden sin método de pago");
+                throw new IllegalArgumentException("El método de pago es obligatorio.");
+            }
 
             List<Product> products = productService.getAllProducts(token);
             double subtotal = 0.0;
@@ -43,7 +49,7 @@ public class OrderService {
                         .filter(p -> p.getId().equals(item.getProductId()))
                         .findFirst()
                         .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado: " + item.getProductId()));
-                
+
                 item.setPrice(product.getPrecio());
                 subtotal += product.getPrecio() * item.getQuantity();
             }
@@ -66,7 +72,7 @@ public class OrderService {
 
             if (response.getStatus() == 200) {
                 ProductService.ResponseMessage responseMessage = jsonb.fromJson(responseBody, ProductService.ResponseMessage.class);
-                if ("success".equals(responseMessage.getStatus()) && responseMessage.getHttpCode() == 200) {
+                if (("success".equals(responseMessage.getStatus()) || "succes".equals(responseMessage.getStatus())) && responseMessage.getHttpCode() == 200) {
                     LOGGER.log(Level.INFO, "Orden creada correctamente: {0}", responseBody);
                     return order;
                 } else {
@@ -74,28 +80,17 @@ public class OrderService {
                     throw new RuntimeException(responseMessage.getMessage());
                 }
             } else {
-                LOGGER.log(Level.SEVERE, "Error al crear orden: Código HTTP: {0}, Respuesta: {1}", 
-                    new Object[]{response.getStatus(), responseBody});
+                LOGGER.log(Level.SEVERE, "Error al crear orden: Código HTTP: {0}, Respuesta: {1}", new Object[]{response.getStatus(), responseBody});
                 throw new RuntimeException("Error al crear orden: Código " + response.getStatus() + " - " + responseBody);
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Excepción al crear orden", e);
             throw new RuntimeException("Error al procesar la orden: " + e.getMessage());
-        } finally {
-            client.close();
-            try {
-                jsonb.close();
-            } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Error cerrando Jsonb", e);
-            }
         }
     }
 
     public List<Order> getAllOrders(String token) {
-        Client client = ClientBuilder.newClient();
-        Jsonb jsonb = JsonbBuilder.create();
-
-        try {
+        try (Client client = ClientBuilder.newClient(); Jsonb jsonb = JsonbBuilder.create()) {
             String url = baseUrl + serviceEndpoint + "/" + collection;
             LOGGER.log(Level.INFO, "Solicitando órdenes a la URL: {0} con token: {1}", new Object[]{url, token});
             Response response = client.target(url)
@@ -111,69 +106,149 @@ public class OrderService {
                 List<Order> orders = Arrays.asList(ordersArray);
                 LOGGER.log(Level.INFO, "Número de órdenes obtenidas: {0}", orders.size());
                 return orders.isEmpty() ? Collections.emptyList() : orders;
+            } else if (response.getStatus() == 204) {
+                LOGGER.log(Level.INFO, "No se encontraron órdenes en la base de datos (204 No Content).");
+                return Collections.emptyList();
             } else {
-                LOGGER.log(Level.SEVERE, "Error al obtener órdenes. Código HTTP: {0}, Respuesta: {1}", 
-                    new Object[]{response.getStatus(), responseBody});
+                LOGGER.log(Level.SEVERE, "Error al obtener órdenes. Código HTTP: {0}, Respuesta: {1}",
+                        new Object[]{response.getStatus(), responseBody});
                 throw new RuntimeException("Error al obtener órdenes: Código " + response.getStatus() + " - " + responseBody);
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Excepción al obtener órdenes", e);
             throw new RuntimeException("Error al conectar con la API: " + e.getMessage());
-        } finally {
-            client.close();
-            try {
-                jsonb.close();
-            } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Error cerrando Jsonb", e);
-            }
         }
     }
 
-    public void updateOrderStatus(String orderId, String newStatus, String token) {
-        Client client = ClientBuilder.newClient();
-        Jsonb jsonb = JsonbBuilder.create();
+    public void updateOrder(HttpServletRequest request, String token) throws IOException, ServletException {
+        try (Client client = ClientBuilder.newClient(); Jsonb jsonb = JsonbBuilder.create()) {
+            Order order = new Order();
 
-        try {
-            // Intentar con un objeto parcial primero
-            Order orderUpdate = new Order();
-            orderUpdate.setStatus(newStatus);
+            // Leer los datos del formulario una sola vez
+            String id = new String(request.getPart("id").getInputStream().readAllBytes()).trim();
+            String customerId = new String(request.getPart("customerId").getInputStream().readAllBytes()).trim();
+            String itemsJson = new String(request.getPart("items").getInputStream().readAllBytes()).trim();
+            String subtotalStr = new String(request.getPart("subtotal").getInputStream().readAllBytes()).trim();
+            String totalStr = new String(request.getPart("total").getInputStream().readAllBytes()).trim();
+            String status = new String(request.getPart("status").getInputStream().readAllBytes()).trim();
+            String createdAt = new String(request.getPart("createdAt").getInputStream().readAllBytes()).trim();
+            String paymentMethod = new String(request.getPart("paymentMethod").getInputStream().readAllBytes()).trim();
 
-            String url = baseUrl + serviceEndpoint + "/" + collection + "/" + orderId;
-            LOGGER.log(Level.INFO, "Actualizando estado de la orden en la URL: {0}", url);
-            String jsonOrder = jsonb.toJson(orderUpdate);
-            LOGGER.log(Level.INFO, "JSON enviado para actualización: {0}", jsonOrder);
+            // Loguear los datos recibidos
+            LOGGER.log(Level.INFO, "Datos recibidos en updateOrder:");
+            LOGGER.log(Level.INFO, "ID: {0}", id);
+            LOGGER.log(Level.INFO, "CustomerId: {0}", customerId);
+            LOGGER.log(Level.INFO, "Items JSON: {0}", itemsJson);
+            LOGGER.log(Level.INFO, "Subtotal: {0}", subtotalStr);
+            LOGGER.log(Level.INFO, "Total: {0}", totalStr);
+            LOGGER.log(Level.INFO, "Status: {0}", status);
+            LOGGER.log(Level.INFO, "CreatedAt: {0}", createdAt);
+            LOGGER.log(Level.INFO, "PaymentMethod: {0}", paymentMethod);
+
+            // Construir el objeto Order en el orden exacto esperado por la API
+            order.setCreatedAt(createdAt);
+            order.setTotal(Double.parseDouble(totalStr));
+            order.setSubtotal(Double.parseDouble(subtotalStr));
+            order.setCustomerId(customerId);
+            order.setPaymentMethod(paymentMethod);
+
+            // Deserializar items
+            List<OrderItem> items;
+            try {
+                if (itemsJson.isEmpty()) {
+                    throw new IllegalArgumentException("El campo items está vacío.");
+                }
+                OrderItem[] itemsArray = jsonb.fromJson(itemsJson, OrderItem[].class);
+                items = Arrays.asList(itemsArray);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Error al deserializar items JSON: " + itemsJson, e);
+                throw new IllegalArgumentException("Error al deserializar los ítems: " + e.getMessage());
+            }
+            order.setItems(items);
+
+            order.setStatus(status);
+            order.setEditable(false); // Marcar la orden como no editable después de la actualización
+
+            // Validaciones
+            if (id.isEmpty()) {
+                LOGGER.log(Level.WARNING, "Intento de actualizar orden sin ID");
+                throw new IllegalArgumentException("El ID de la orden es obligatorio.");
+            }
+            if (customerId.isEmpty()) {
+                LOGGER.log(Level.WARNING, "Intento de actualizar orden sin customerId");
+                throw new IllegalArgumentException("El ID del cliente es obligatorio.");
+            }
+            if (items.isEmpty()) {
+                LOGGER.log(Level.WARNING, "Intento de actualizar orden sin ítems");
+                throw new IllegalArgumentException("La orden debe tener al menos un ítem.");
+            }
+            for (OrderItem item : items) {
+                if (item.getProductId() == null || item.getProductId().isEmpty()) {
+                    LOGGER.log(Level.WARNING, "Ítem con productId inválido");
+                    throw new IllegalArgumentException("El ID del producto es obligatorio.");
+                }
+                if (item.getQuantity() <= 0) {
+                    LOGGER.log(Level.WARNING, "Ítem con cantidad inválida: {0}", String.valueOf(item.getQuantity()));
+                    throw new IllegalArgumentException("La cantidad debe ser mayor que cero.");
+                }
+                if (item.getPrice() < 0) {
+                    LOGGER.log(Level.WARNING, "Ítem con precio inválido: {0}", String.valueOf(item.getPrice()));
+                    throw new IllegalArgumentException("El precio no puede ser negativo.");
+                }
+            }
+            if (order.getSubtotal() < 0) {
+                LOGGER.log(Level.WARNING, "Intento de actualizar orden con subtotal negativo: {0}", String.valueOf(order.getSubtotal()));
+                throw new IllegalArgumentException("El subtotal no puede ser negativo.");
+            }
+            if (order.getTotal() < 0) {
+                LOGGER.log(Level.WARNING, "Intento de actualizar orden con total negativo: {0}", String.valueOf(order.getTotal()));
+                throw new IllegalArgumentException("El total no puede ser negativo.");
+            }
+            if (!List.of("Pendiente", "Enviado", "Completado", "Cancelado").contains(status)) {
+                LOGGER.log(Level.WARNING, "Estado de orden inválido: {0}", status);
+                throw new IllegalArgumentException("El estado de la orden es inválido: " + status);
+            }
+            if (createdAt.isEmpty()) {
+                LOGGER.log(Level.WARNING, "Intento de actualizar orden sin fecha de creación");
+                throw new IllegalArgumentException("La fecha de creación es obligatoria.");
+            }
+            if (paymentMethod.isEmpty()) {
+                LOGGER.log(Level.WARNING, "Intento de actualizar orden sin método de pago");
+                throw new IllegalArgumentException("El método de pago es obligatorio.");
+            }
+
+            // Loguear el objeto Order antes de enviarlo a la API
+            String orderJson = jsonb.toJson(order);
+            LOGGER.log(Level.INFO, "Objeto Order enviado a la API: {0}", orderJson);
+
+            // Enviar solicitud PUT
+            String url = baseUrl + serviceEndpoint + "/" + collection + "/" + id;
+            LOGGER.log(Level.INFO, "Actualizando orden en la URL: {0}", url);
 
             Response response = client.target(url)
                     .request(MediaType.APPLICATION_JSON)
                     .header(ConfiguracionApp.getProperty("app.token.header"), "Bearer " + token)
-                    .put(Entity.json(orderUpdate));
+                    .put(Entity.json(order));
 
             String responseBody = response.readEntity(String.class);
             LOGGER.log(Level.INFO, "Código HTTP: {0}, Respuesta de la API: {1}", new Object[]{response.getStatus(), responseBody});
 
             if (response.getStatus() == 200) {
-                ProductService.ResponseMessage responseMessage = jsonb.fromJson(responseBody, ProductService.ResponseMessage.class);
-                if ("succes".equals(responseMessage.getStatus()) && responseMessage.getHttpCode() == 200) {
-                    LOGGER.log(Level.INFO, "Estado de la orden actualizado correctamente: {0}", responseBody);
+                ProductService.ResponseMessage responseMessage = jsonb.fromJson(
+                        responseBody, ProductService.ResponseMessage.class);
+                if (("success".equals(responseMessage.getStatus()) || "succes".equals(responseMessage.getStatus())) && responseMessage.getHttpCode() == 200) {
+                    LOGGER.log(Level.INFO, "Orden actualizada correctamente: {0}", responseBody);
                 } else {
                     LOGGER.log(Level.SEVERE, "Error en la respuesta de la API: {0}", responseBody);
-                    throw new RuntimeException(responseMessage.getMessage());
+                    throw new RuntimeException("Error al actualizar la orden: " + responseMessage.getMessage());
                 }
             } else {
-                LOGGER.log(Level.SEVERE, "Error al actualizar el estado de la orden: Código HTTP: {0}, Respuesta: {1}", 
-                    new Object[]{response.getStatus(), responseBody});
-                throw new RuntimeException("Error al actualizar el estado de la orden: Código " + response.getStatus() + " - " + responseBody);
+                LOGGER.log(Level.SEVERE, "Error al actualizar orden: Código HTTP: {0}, Respuesta: {1}", new Object[]{response.getStatus(), responseBody});
+                throw new RuntimeException("Error al actualizar orden: Código " + response.getStatus() + " - " + responseBody);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Excepción al actualizar el estado de la orden", e);
-            throw new RuntimeException("Error al actualizar el estado de la orden: " + e.getMessage());
-        } finally {
-            client.close();
-            try {
-                jsonb.close();
-            } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Error cerrando Jsonb", e);
-            }
+            LOGGER.log(Level.SEVERE, "Excepción al actualizar orden", e);
+            throw new RuntimeException("Error al procesar la actualización: " + e.getMessage());
         }
     }
 }

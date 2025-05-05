@@ -1,145 +1,222 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
-<!DOCTYPE html>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%
+    String token = (String) session.getAttribute("token");
+    String correo = (String) session.getAttribute("correo");
+    if (token == null || correo == null) {
+        response.sendRedirect(request.getContextPath() + "/login.jsp");
+        return;
+    }
+    // No eliminamos los atributos de la sesión inmediatamente
+    String message = (String) session.getAttribute("message");
+    String error = (String) session.getAttribute("error");
+%>
 <html>
 <head>
-    <title>Órdenes - Supplier Module</title>
+    <title>Orders</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
-    <div class="container mt-4">
-        <h2>Lista de Órdenes</h2>
+    <div class="container">
+        <div class="dashboard-header">
+            <h2>Órdenes - <%= correo %></h2>
+            <div class="dashboard-buttons">
+                <a href="${pageContext.request.contextPath}/dashboard" class="btn btn-primary me-2">Volver al Dashboard</a>
+                <a href="${pageContext.request.contextPath}/logout" class="btn btn-danger">Cerrar Sesión</a>
+            </div>
+        </div>
+        <div>
+            <h3>Lista de Órdenes</h3>
+            <c:choose>
+                <c:when test="${not empty errorMessage}">
+                    <div class="alert alert-danger" role="alert">
+                        <c:out value="${errorMessage}"/>
+                    </div>
+                </c:when>
+                <c:when test="${empty orders}">
+                    <div class="alert alert-info" role="alert">
+                        No hay órdenes disponibles.
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Ítems</th>
+                                <th>Subtotal</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Fecha Creación</th>
+                                <th>Método de Pago</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="order" items="${orders}">
+                                <tr>
+                                    <td>${fn:escapeXml(order.id)}</td>
+                                    <td>${fn:escapeXml(order.customerId)}</td>
+                                    <td>
+                                        <c:forEach var="item" items="${order.items}">
+                                            <c:set var="product" value="${products.stream().filter(p -> p.id == item.productId).findFirst().orElse(null)}"/>
+                                            Producto: ${product != null ? fn:escapeXml(product.nombre) : fn:escapeXml(item.productId)},
+                                            Cantidad: ${item.quantity},
+                                            Precio: $<fmt:formatNumber value="${item.price}" pattern="#,##0.00"/><br>
+                                        </c:forEach>
+                                    </td>
+                                    <td>$<fmt:formatNumber value="${order.subtotal}" pattern="#,##0.00"/></td>
+                                    <td>$<fmt:formatNumber value="${order.total}" pattern="#,##0.00"/></td>
+                                    <td>${fn:escapeXml(order.status)}</td>
+                                    <td>${fn:escapeXml(order.createdAt)}</td>
+                                    <td>${fn:escapeXml(order.paymentMethod)}</td>
+                                    <td>
+                                        <c:if test="${order.editable}">
+                                            <button class="btn btn-warning btn-sm update-order"
+                                                    data-id="${fn:escapeXml(order.id)}"
+                                                    data-customer-id="${fn:escapeXml(order.customerId)}"
+                                                    data-items="${fn:escapeXml(order.itemsJson)}"
+                                                    data-subtotal="${order.subtotal}"
+                                                    data-total="${order.total}"
+                                                    data-status="${fn:escapeXml(order.status)}"
+                                                    data-created-at="${fn:escapeXml(order.createdAt)}"
+                                                    data-payment-method="${fn:escapeXml(order.paymentMethod)}"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#updateModal">Actualizar Estado</button>
+                                        </c:if>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </c:otherwise>
+            </c:choose>
+        </div>
 
-        <c:if test="${not empty error}">
-            <div class="alert alert-danger">${error}</div>
-        </c:if>
-
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Número de Orden</th>
-                    <th>Cliente</th>
-                    <th>Productos</th>
-                    <th>Subtotal</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th>Fecha de Creación</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <c:forEach var="order" items="${orders}">
-                    <tr>
-                        <td>${order.id}</td>
-                        <td>${order.customerId}</td>
-                        <td>
-                            <ul>
-                                <c:forEach var="item" items="${order.items}">
-                                    <li>Producto ID: ${item.productId}, Cantidad: ${item.quantity}, Precio: $${item.price}</li>
-                                </c:forEach>
-                            </ul>
-                        </td>
-                        <td>$${order.subtotal}</td>
-                        <td>$${order.total}</td>
-                        <td>${order.status}</td>
-                        <td>
-                            <c:catch var="parseException">
-                                <fmt:parseDate value="${order.createdAt}" pattern="yyyy-MM-dd'T'HH:mm:ss.SSSSSSS" var="parsedDate" />
-                                <fmt:formatDate value="${parsedDate}" pattern="dd/MM/yyyy HH:mm:ss" />
-                            </c:catch>
-                            <c:if test="${not empty parseException}">
-                                <c:catch var="parseExceptionNoMillis">
-                                    <fmt:parseDate value="${order.createdAt}" pattern="yyyy-MM-dd'T'HH:mm:ss" var="parsedDate" />
-                                    <fmt:formatDate value="${parsedDate}" pattern="dd/MM/yyyy HH:mm:ss" />
-                                </c:catch>
-                                <c:if test="${not empty parseExceptionNoMillis}">
-                                    ${order.createdAt}
-                                </c:if>
-                            </c:if>
-                        </td>
-                        <td>
-                            <c:if test="${order.status == 'Pendiente'}">
-                                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#confirmModal" 
-                                        onclick="setAction('Completada', '${order.id}')">Completar</button>
-                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmModal" 
-                                        onclick="setAction('Cancelada', '${order.id}')">Cancelar</button>
-                            </c:if>
-                        </td>
-                    </tr>
-                </c:forEach>
-                <c:if test="${empty orders}">
-                    <tr>
-                        <td colspan="8" class="text-center">No hay órdenes disponibles.</td>
-                    </tr>
-                </c:if>
-            </tbody>
-        </table>
-
-        <a href="${pageContext.request.contextPath}/dashboard" class="btn btn-primary mt-3">Volver al Dashboard</a>
-    </div>
-
-    <!-- Modal de confirmación -->
-    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmModalLabel">Confirmar Acción</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    ¿Estás seguro de que deseas marcar esta orden como <span id="actionText"></span>?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <form id="updateStatusForm" action="${pageContext.request.contextPath}/orders" method="post">
-                        <input type="hidden" name="action" value="updateStatus">
-                        <input type="hidden" name="orderId" id="orderIdInput">
-                        <input type="hidden" name="status" id="statusInput">
-                        <button type="submit" class="btn btn-primary">Confirmar</button>
-                    </form>
+        <!-- Modal para Actualizar Estado -->
+        <div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="updateModalLabel">Actualizar Estado de Orden</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="orders" method="post" enctype="multipart/form-data" id="updateOrderForm">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" id="updateId" name="id">
+                            <input type="hidden" id="updateCustomerId" name="customerId">
+                            <input type="hidden" id="updateItems" name="items">
+                            <input type="hidden" id="updateSubtotal" name="subtotal">
+                            <input type="hidden" id="updateTotal" name="total">
+                            <input type="hidden" id="updateCreatedAt" name="createdAt">
+                            <input type="hidden" id="updatePaymentMethod" name="paymentMethod">
+                            <div class="mb-3">
+                                <label for="updateStatus" class="form-label">Estado</label>
+                                <select class="form-control" id="updateStatus" name="status" required>
+                                    <option value="Pendiente">Pendiente</option>
+                                    <option value="Completado">Completado</option>
+                                    <option value="Cancelado">Cancelado</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal de éxito -->
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="successModalLabel">Acción Completada</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    La orden ha sido marcada como <span id="successActionText"></span>.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="window.location.reload()">Cerrar</button>
+        <!-- Modal para Mensajes -->
+        <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="messageModalLabel">Notificación</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="messageModalBody">
+                        <c:choose>
+                            <c:when test="${not empty error}">
+                                <p class="text-danger"><c:out value="${error}"/></p>
+                            </c:when>
+                            <c:when test="${not empty message}">
+                                <p class="text-success"><c:out value="${message}"/></p>
+                            </c:when>
+                            <c:otherwise>
+                                <p>No se recibió ningún mensaje.</p>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="clearSessionAttributes()">Aceptar</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function setAction(status, orderId) {
-            document.getElementById('actionText').innerText = status;
-            document.getElementById('orderIdInput').value = orderId;
-            document.getElementById('statusInput').value = status;
-        }
-
-        // Mostrar el modal de éxito si hay un parámetro 'success' en la URL
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const successStatus = urlParams.get('success');
-            if (successStatus) {
-                document.getElementById('successActionText').innerText = successStatus;
-                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                successModal.show();
+        <script>
+            function clearSessionAttributes() {
+                // Hacer una llamada AJAX para limpiar los atributos de la sesión
+                fetch('${pageContext.request.contextPath}/clearMessages', {
+                    method: 'POST'
+                }).then(() => {
+                    // No necesitamos hacer nada después de limpiar
+                });
             }
-        };
-    </script>
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const updateButtons = document.querySelectorAll('.update-order');
+                updateButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        console.log('ID del botón:', id); // Depuración
+                        if (!id) {
+                            alert('Error: El ID de la orden no está disponible.');
+                            return;
+                        }
+                        document.getElementById('updateId').value = id;
+                        document.getElementById('updateCustomerId').value = this.getAttribute('data-customer-id');
+                        document.getElementById('updateItems').value = this.getAttribute('data-items');
+                        document.getElementById('updateSubtotal').value = this.getAttribute('data-subtotal');
+                        document.getElementById('updateTotal').value = this.getAttribute('data-total');
+                        document.getElementById('updateStatus').value = this.getAttribute('data-status');
+                        document.getElementById('updateCreatedAt').value = this.getAttribute('data-created-at');
+                        document.getElementById('updatePaymentMethod').value = this.getAttribute('data-payment-method');
+                    });
+                });
+
+                <% if (message != null || error != null) { %>
+                    new bootstrap.Modal(document.getElementById('messageModal')).show();
+                <% } %>
+
+                document.getElementById('updateOrderForm').addEventListener('submit', function(e) {
+                    const id = document.getElementById('updateId').value;
+                    const status = document.getElementById('updateStatus').value;
+                    console.log('ID antes de enviar:', id); // Depuración
+                    if (!id) {
+                        e.preventDefault();
+                        alert('Error: El ID de la orden es obligatorio.');
+                        return;
+                    }
+                    if (!['Pendiente', 'Enviado', 'Completado', 'Cancelado'].includes(status)) {
+                        e.preventDefault();
+                        alert('Estado inválido.');
+                    }
+                    // Deshabilitar el botón correspondiente después de enviar el formulario
+                    const button = document.querySelector(`.update-order[data-id="${id}"]`);
+                    if (button) {
+                        button.disabled = true;
+                        button.classList.remove('btn-warning');
+                        button.classList.add('btn-secondary');
+                        button.textContent = 'Actualizado';
+                    }
+                });
+            });
+        </script>
+    </div>
 </body>
 </html>
