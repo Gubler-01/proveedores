@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%
     String token = (String) session.getAttribute("token");
     String correo = (String) session.getAttribute("correo");
@@ -10,8 +11,6 @@
     }
     String message = (String) session.getAttribute("message");
     String error = (String) session.getAttribute("error");
-    session.removeAttribute("message");
-    session.removeAttribute("error");
 %>
 <html>
 <head>
@@ -30,55 +29,69 @@
         </div>
         <div>
             <h3>Lista de Productos</h3>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Descripción</th>
-                        <th>Precio</th>
-                        <th>Stock</th>
-                        <th>Categoría</th>
-                        <th>Status</th>
-                        <th>Imagen</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <c:forEach var="product" items="${products}">
-                        <tr>
-                            <td>${product.id}</td>
-                            <td>${product.nombre}</td>
-                            <td>${product.descripcion}</td>
-                            <td>$<fmt:formatNumber value="${product.precio}" pattern="#,##0.00"/></td>
-                            <td>${product.stock}</td>
-                            <td>${product.categoria}</td>
-                            <td>${product.status}</td>
-                            <td>
-                                <c:if test="${not empty product.imagen}">
-                                    <img src="${product.imagen}" alt="Imagen del producto" style="max-width: 100px;"/>
-                                </c:if>
-                            </td>
-                            <td>
-                                <button class="btn btn-warning btn-sm edit-product" 
-                                        data-id="${product.id}" 
-                                        data-nombre="${product.nombre}" 
-                                        data-descripcion="${product.descripcion}" 
-                                        data-precio="${product.precio}" 
-                                        data-stock="${product.stock}" 
-                                        data-status="${product.status}" 
-                                        data-imagen="${product.imagen}" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#editModal">Editar</button>
-                                <button class="btn btn-danger btn-sm delete-product" 
-                                        data-id="${product.id}" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#deleteModal">Eliminar</button>
-                            </td>
-                        </tr>
-                    </c:forEach>
-                </tbody>
-            </table>
+            <c:choose>
+                <c:when test="${not empty errorMessage}">
+                    <div class="alert alert-danger" role="alert">
+                        <c:out value="${errorMessage}"/>
+                    </div>
+                </c:when>
+                <c:when test="${empty products}">
+                    <div class="alert alert-info" role="alert">
+                        No hay productos disponibles.
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Categoría</th>
+                                <th>Status</th>
+                                <th>Imagen</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="product" items="${products}">
+                                <tr>
+                                    <td>${fn:escapeXml(product.id)}</td>
+                                    <td>${fn:escapeXml(product.nombre)}</td>
+                                    <td>${fn:escapeXml(product.descripcion)}</td>
+                                    <td>$<fmt:formatNumber value="${product.precio}" pattern="#,##0.00"/></td>
+                                    <td>${fn:escapeXml(product.stock)}</td>
+                                    <td>${fn:escapeXml(product.categoria)}</td>
+                                    <td>${fn:escapeXml(product.status)}</td>
+                                    <td>
+                                        <c:if test="${not empty product.imagen}">
+                                            <img src="${fn:escapeXml(product.imagen)}" alt="Imagen del producto" style="max-width: 100px;"/>
+                                        </c:if>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm edit-product" 
+                                                data-id="${fn:escapeXml(product.id)}" 
+                                                data-nombre="${fn:escapeXml(product.nombre)}" 
+                                                data-descripcion="${fn:escapeXml(product.descripcion)}" 
+                                                data-precio="${product.precio}" 
+                                                data-stock="${product.stock}" 
+                                                data-status="${fn:escapeXml(product.status)}" 
+                                                data-imagen="${fn:escapeXml(product.imagen)}" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editModal">Editar</button>
+                                        <button class="btn btn-danger btn-sm delete-product" 
+                                                data-id="${fn:escapeXml(product.id)}" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteModal">Eliminar</button>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </c:otherwise>
+            </c:choose>
 
             <div class="text-center mt-4">
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">Agregar Producto</button>
@@ -212,7 +225,17 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body" id="messageModalBody">
-                        <%= message != null ? message : (error != null ? error : "") %>
+                        <c:choose>
+                            <c:when test="${not empty error}">
+                                <p class="text-danger"><c:out value="${error}"/></p>
+                            </c:when>
+                            <c:when test="${not empty message}">
+                                <p class="text-success"><c:out value="${message}"/></p>
+                            </c:when>
+                            <c:otherwise>
+                                <p>No se recibió ningún mensaje.</p>
+                            </c:otherwise>
+                        </c:choose>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>

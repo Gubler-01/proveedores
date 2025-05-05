@@ -11,12 +11,13 @@ import mx.tecnm.toluca.service.ProductService;
 import mx.tecnm.toluca.model.Product;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @WebServlet("/dashboard")
-@MultipartConfig // Añadimos esta anotación para habilitar el manejo de multipart
+@MultipartConfig
 public class DashboardController extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(DashboardController.class.getName());
@@ -38,24 +39,30 @@ public class DashboardController extends HttpServlet {
             return;
         }
 
+        List<Product> products = Collections.emptyList();
+        String errorMessage = null;
+
         try {
             LOGGER.log(Level.INFO, "Obteniendo lista de productos...");
-            List<Product> products = productService.getAllProducts(token);
+            products = productService.getAllProducts(token);
             LOGGER.log(Level.INFO, "Productos obtenidos: {0}", products.size());
-            request.setAttribute("products", products);
-
-            Integer currentPage = request.getParameter("page") != null ? Integer.parseInt(request.getParameter("page")) : 1;
-            Integer totalPages = 1;
-            request.setAttribute("currentPage", currentPage);
-            request.setAttribute("totalPages", totalPages);
-
-            LOGGER.log(Level.INFO, "Redirigiendo a dashboard.jsp");
-            request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error al cargar productos", e);
-            request.setAttribute("error", "Error al cargar productos: " + e.getMessage());
-            request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
+            errorMessage = "No se pudo conectar con la base de datos. Por favor, intenta de nuevo más tarde.";
         }
+
+        request.setAttribute("products", products);
+        if (errorMessage != null) {
+            request.setAttribute("errorMessage", errorMessage);
+        }
+
+        Integer currentPage = request.getParameter("page") != null ? Integer.parseInt(request.getParameter("page")) : 1;
+        Integer totalPages = 1;
+        request.setAttribute("currentPage", currentPage);
+        request.setAttribute("totalPages", totalPages);
+
+        LOGGER.log(Level.INFO, "Redirigiendo a dashboard.jsp");
+        request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
     }
 
     @Override
@@ -94,7 +101,7 @@ public class DashboardController extends HttpServlet {
             }
         } catch (IllegalArgumentException e) {
             LOGGER.log(Level.SEVERE, "Error de validación: {0}", e.getMessage());
-            session.setAttribute("error", e.getMessage()); // Mostrar mensaje específico al usuario
+            session.setAttribute("error", e.getMessage());
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error en la acción del POST", e);
             session.setAttribute("error", "Error: " + e.getMessage());

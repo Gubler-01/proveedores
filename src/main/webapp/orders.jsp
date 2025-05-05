@@ -30,57 +30,71 @@
         </div>
         <div>
             <h3>Lista de Órdenes</h3>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Cliente</th>
-                        <th>Ítems</th>
-                        <th>Subtotal</th>
-                        <th>Total</th>
-                        <th>Estado</th>
-                        <th>Fecha Creación</th>
-                        <th>Método de Pago</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <c:forEach var="order" items="${orders}">
-                        <tr>
-                            <td>${fn:escapeXml(order.id)}</td>
-                            <td>${fn:escapeXml(order.customerId)}</td>
-                            <td>
-                                <c:forEach var="item" items="${order.items}">
-                                    <c:set var="product" value="${products.stream().filter(p -> p.id == item.productId).findFirst().orElse(null)}"/>
-                                    Producto: ${product != null ? fn:escapeXml(product.nombre) : fn:escapeXml(item.productId)},
-                                    Cantidad: ${item.quantity},
-                                    Precio: $<fmt:formatNumber value="${item.price}" pattern="#,##0.00"/><br>
-                                </c:forEach>
-                            </td>
-                            <td>$<fmt:formatNumber value="${order.subtotal}" pattern="#,##0.00"/></td>
-                            <td>$<fmt:formatNumber value="${order.total}" pattern="#,##0.00"/></td>
-                            <td>${fn:escapeXml(order.status)}</td>
-                            <td>${fn:escapeXml(order.createdAt)}</td>
-                            <td>${fn:escapeXml(order.paymentMethod)}</td>
-                            <td>
-                                <c:if test="${order.editable}">
-                                    <button class="btn btn-warning btn-sm update-order"
-                                            data-id="${fn:escapeXml(order.id)}"
-                                            data-customer-id="${fn:escapeXml(order.customerId)}"
-                                            data-items="${fn:escapeXml(order.itemsJson)}"
-                                            data-subtotal="${order.subtotal}"
-                                            data-total="${order.total}"
-                                            data-status="${fn:escapeXml(order.status)}"
-                                            data-created-at="${fn:escapeXml(order.createdAt)}"
-                                            data-payment-method="${fn:escapeXml(order.paymentMethod)}"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#updateModal">Actualizar Estado</button>
-                                </c:if>
-                            </td>
-                        </tr>
-                    </c:forEach>
-                </tbody>
-            </table>
+            <c:choose>
+                <c:when test="${not empty errorMessage}">
+                    <div class="alert alert-danger" role="alert">
+                        <c:out value="${errorMessage}"/>
+                    </div>
+                </c:when>
+                <c:when test="${empty orders}">
+                    <div class="alert alert-info" role="alert">
+                        No hay órdenes disponibles.
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Ítems</th>
+                                <th>Subtotal</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Fecha Creación</th>
+                                <th>Método de Pago</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="order" items="${orders}">
+                                <tr>
+                                    <td>${fn:escapeXml(order.id)}</td>
+                                    <td>${fn:escapeXml(order.customerId)}</td>
+                                    <td>
+                                        <c:forEach var="item" items="${order.items}">
+                                            <c:set var="product" value="${products.stream().filter(p -> p.id == item.productId).findFirst().orElse(null)}"/>
+                                            Producto: ${product != null ? fn:escapeXml(product.nombre) : fn:escapeXml(item.productId)},
+                                            Cantidad: ${item.quantity},
+                                            Precio: $<fmt:formatNumber value="${item.price}" pattern="#,##0.00"/><br>
+                                        </c:forEach>
+                                    </td>
+                                    <td>$<fmt:formatNumber value="${order.subtotal}" pattern="#,##0.00"/></td>
+                                    <td>$<fmt:formatNumber value="${order.total}" pattern="#,##0.00"/></td>
+                                    <td>${fn:escapeXml(order.status)}</td>
+                                    <td>${fn:escapeXml(order.createdAt)}</td>
+                                    <td>${fn:escapeXml(order.paymentMethod)}</td>
+                                    <td>
+                                        <c:if test="${order.editable}">
+                                            <button class="btn btn-warning btn-sm update-order"
+                                                    data-id="${fn:escapeXml(order.id)}"
+                                                    data-customer-id="${fn:escapeXml(order.customerId)}"
+                                                    data-items="${fn:escapeXml(order.itemsJson)}"
+                                                    data-subtotal="${order.subtotal}"
+                                                    data-total="${order.total}"
+                                                    data-status="${fn:escapeXml(order.status)}"
+                                                    data-created-at="${fn:escapeXml(order.createdAt)}"
+                                                    data-payment-method="${fn:escapeXml(order.paymentMethod)}"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#updateModal">Actualizar Estado</button>
+                                        </c:if>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </c:otherwise>
+            </c:choose>
         </div>
 
         <!-- Modal para Actualizar Estado -->
@@ -105,7 +119,6 @@
                                 <label for="updateStatus" class="form-label">Estado</label>
                                 <select class="form-control" id="updateStatus" name="status" required>
                                     <option value="Pendiente">Pendiente</option>
-                                    <option value="Enviado">Enviado</option>
                                     <option value="Completado">Completado</option>
                                     <option value="Cancelado">Cancelado</option>
                                 </select>

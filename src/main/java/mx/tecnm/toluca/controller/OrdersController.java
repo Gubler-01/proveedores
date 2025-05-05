@@ -1,7 +1,5 @@
 package mx.tecnm.toluca.controller;
 
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
@@ -9,23 +7,25 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
 import mx.tecnm.toluca.model.Order;
 import mx.tecnm.toluca.model.Product;
 import mx.tecnm.toluca.service.OrderService;
 import mx.tecnm.toluca.service.ProductService;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@WebServlet("/orders")
+@WebServlet(name = "OrdersController", urlPatterns = {"/orders"})
 @MultipartConfig
 public class OrdersController extends HttpServlet {
-
     private static final Logger LOGGER = Logger.getLogger(OrdersController.class.getName());
-    private static final OrderService orderService = new OrderService();
-    private static final ProductService productService = new ProductService();
+    private final OrderService orderService = new OrderService();
+    private final ProductService productService = new ProductService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -42,14 +42,21 @@ public class OrdersController extends HttpServlet {
             return;
         }
 
+        List<Order> orders = Collections.emptyList();
+        List<Product> products = Collections.emptyList();
+        String errorMessage = null;
+
         try {
             LOGGER.log(Level.INFO, "Obteniendo lista de órdenes...");
-            List<Order> orders = orderService.getAllOrders(token);
-            LOGGER.log(Level.INFO, "Órdenes obtenidas: {0}", orders.size());
+            orders = orderService.getAllOrders(token);
+            LOGGER.log(Level.INFO, "Órdenes obtenidas: {0}", String.valueOf(orders.size()));
+            for (Order order : orders) {
+                LOGGER.log(Level.INFO, "Orden ID: {0}", order.getId());
+            }
 
             LOGGER.log(Level.INFO, "Obteniendo lista de productos...");
-            List<Product> products = productService.getAllProducts(token);
-            LOGGER.log(Level.INFO, "Productos obtenidos: {0}", products.size());
+            products = productService.getAllProducts(token);
+            LOGGER.log(Level.INFO, "Productos obtenidos: {0}", String.valueOf(products.size()));
 
             // Serializar ítems a JSON para cada orden
             try (Jsonb jsonb = JsonbBuilder.create()) {
@@ -59,17 +66,19 @@ public class OrdersController extends HttpServlet {
                     order.setItemsJson(itemsJson);
                 }
             }
-
-            request.setAttribute("orders", orders);
-            request.setAttribute("products", products);
-
-            LOGGER.log(Level.INFO, "Redirigiendo a orders.jsp");
-            request.getRequestDispatcher("/orders.jsp").forward(request, response);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error al cargar órdenes o productos", e);
-            session.setAttribute("error", "Error al cargar las órdenes: " + e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/orders");
+            errorMessage = "No se pudo conectar con la base de datos. Por favor, intenta de nuevo más tarde.";
         }
+
+        request.setAttribute("orders", orders);
+        request.setAttribute("products", products);
+        if (errorMessage != null) {
+            request.setAttribute("errorMessage", errorMessage);
+        }
+
+        LOGGER.log(Level.INFO, "Redirigiendo a orders.jsp");
+        request.getRequestDispatcher("/orders.jsp").forward(request, response);
     }
 
     @Override
